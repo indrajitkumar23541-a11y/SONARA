@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <radialGradient id="fBg" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#141a2e" />
+      <stop offset="100%" stop-color="#05060a" />
+    </radialGradient>
+    <linearGradient id="fGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="50%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+    <filter id="fGlow">
+      <feGaussianBlur stdDeviation="3" result="b" />
+      <feMerge>
+        <feMergeNode in="b" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="128" height="128" rx="36" fill="url(#fBg)" />
+  <circle cx="64" cy="64" r="48" fill="none" stroke="url(#fGrad)" stroke-width="1.5" stroke-opacity="0.3" stroke-dasharray="4 3" />
+
+  <!-- Fluid 'S' Audio Wave -->
+  <path d="M 86 38
+           C 70 30, 45 37, 44 54
+           C 43 69, 61 72, 72 77
+           C 86 83, 89 97, 80 105
+           C 69 115, 45 111, 36 99
+           C 42 103, 56 107, 67 102
+           C 77 97, 78 87, 67 82
+           C 55 76, 36 72, 38 52
+           C 39 33, 62 25, 86 38 Z"
+        fill="url(#fGrad)"
+        filter="url(#fGlow)" />
+
+  <circle cx="86" cy="38" r="2.5" fill="#ffffff" />
+  <circle cx="36" cy="99" r="2.5" fill="#00f2fe" />
+</svg>

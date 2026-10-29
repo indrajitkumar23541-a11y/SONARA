@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#141a2e" />
+      <stop offset="50%" stop-color="#0a0d18" />
+      <stop offset="100%" stop-color="#040508" />
+    </radialGradient>
+
+    <!-- Core Brand Gradient -->
+    <linearGradient id="sonaraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="45%" stop-color="#8b5cf6" />
+      <stop offset="85%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+
+    <!-- Radiant Inner Glow -->
+    <linearGradient id="innerShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0" />
+      <stop offset="100%" stop-color="#00f2fe" stop-opacity="0.3" />
+    </linearGradient>
+
+    <!-- Subtle Wave Gradient -->
+    <linearGradient id="waveGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.1" />
+      <stop offset="50%" stop-color="#8b5cf6" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0.1" />
+    </linearGradient>
+
+    <!-- Filters for 3D Neon Glow -->
+    <filter id="glowEffect" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur1" />
+      <feGaussianBlur stdDeviation="28" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Deep Obsidian Background Disc with Subtle Rim -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGlow)" />
+  <rect width="508" height="508" x="2" y="2" rx="126" fill="none" stroke="url(#sonaraGrad)" stroke-width="2" stroke-opacity="0.25" />
+
+  <!-- Outer Sonic Resonance Waves -->
+  <g opacity="0.35" filter="url(#softGlow)">
+    <circle cx="256" cy="256" r="185" fill="none" stroke="url(#waveGrad)" stroke-width="1.5" stroke-dasharray="8 6" />
+    <circle cx="256" cy="256" r="150" fill="none" stroke="url(#sonaraGrad)" stroke-width="1.2" stroke-opacity="0.4" />
+  </g>
+
+  <!-- Sound Frequency Bars behind the 'S' -->
+  <g opacity="0.4" stroke-linecap="round">
+    <line x1="160" y1="256" x2="160" y2="280" stroke="#00f2fe" stroke-width="4" />
+    <line x1="180" y1="240" x2="180" y2="300" stroke="#00f2fe" stroke-width="4" />
+    <line x1="200" y1="220" x2="200" y2="320" stroke="#38bdf8" stroke-width="4" />
+    
+    <line x1="312" y1="210" x2="312" y2="310" stroke="#a855f7" stroke-width="4" />
+    <line x1="332" y1="230" x2="332" y2="290" stroke="#ec4899" stroke-width="4" />
+    <line x1="352" y1="245" x2="352" y2="275" stroke="#ec4899" stroke-width="4" />
+  </g>
+
+  <!-- Iconic 'S' Harmonizer Fluid Emblem -->
+  <!-- Ambient Neon Drop Shadow & Glow -->
+  <path d="M 330 155 
+           C 270 125, 185 150, 180 215 
+           C 175 270, 240 280, 280 300 
+           C 335 325, 345 375, 315 410 
+           C 275 450, 190 440, 155 390
+           C 175 400, 225 415, 265 395
+           C 300 375, 305 340, 265 320
+           C 220 295, 150 280, 155 205
+           C 160 140, 245 105, 330 155 Z" 
+        fill="url(#sonaraGrad)" 
+        opacity="0.6" 
+        filter="url(#glowEffect)" />
+
+  <!-- Main Razor-Sharp 3D Chromatic 'S' Ribbon -->
+  <path d="M 345 150
+           C 280 115, 180 145, 175 215
+           C 170 275, 245 285, 290 305
+           C 345 330, 355 385, 320 420
+           C 275 460, 180 445, 145 395
+           C 170 410, 225 425, 270 405
+           C 310 385, 315 345, 270 325
+           C 220 300, 145 285, 150 205
+           C 155 130, 250 95, 345 150 Z"
+        fill="url(#sonaraGrad)" />
+
+  <!-- Glass Specular Reflection Ribbon Highlight -->
+  <path d="M 345 150
+           C 280 115, 180 145, 175 215
+           C 170 275, 245 285, 290 305
+           C 345 330, 355 385, 320 420
+           C 275 460, 180 445, 145 395"
+        fill="none"
+        stroke="url(#innerShine)"
+        stroke-width="5"
+        stroke-linecap="round"
+        opacity="0.85" />
+
+  <!-- Central Sonic Aura Sparkle Elements -->
+  <circle cx="178" cy="215" r="7" fill="#00f2fe" filter="url(#softGlow)" />
+  <circle cx="320" cy="420" r="7" fill="#f59e0b" filter="url(#softGlow)" />
+  <circle cx="345" cy="150" r="5" fill="#ffffff" filter="url(#softGlow)" />
+  <circle cx="145" cy="395" r="5" fill="#ec4899" filter="url(#softGlow)" />
+
+  <!-- Harmonic Orbit Beads -->
+  <circle cx="256" cy="71" r="5" fill="#00f2fe" opacity="0.8" />
+  <circle cx="441" cy="256" r="5" fill="#8b5cf6" opacity="0.8" />
+  <circle cx="256" cy="441" r="5" fill="#ec4899" opacity="0.8" />
+  <circle cx="71" cy="256" r="5" fill="#38bdf8" opacity="0.8" />
+</svg>

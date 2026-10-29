@@ -1,0 +1,4 @@
+file 'E:\SONARA\public\audio\test_line_0.mp3'
+file 'E:\SONARA\public\audio\test_line_1.mp3'
+file 'E:\SONARA\public\audio\test_line_2.mp3'
+file 'E:\SONARA\public\audio\test_line_3.mp3'
