@@ -2,21 +2,16 @@ import React from 'react';
 import { 
   SquarePen, 
   Search, 
-  LayoutGrid, 
-  History, 
-  GraduationCap, 
+  Library, 
   Settings, 
-  Sparkles,
-  Music2
+  Sparkles
 } from 'lucide-react';
 
 export default function GeminiSidebar({ 
   onNewChat, 
-  onOpenAvatars, 
-  onOpenHistory, 
+  onOpenLibrary, 
   onOpenSettings,
-  activeView,
-  voiceProfile
+  activeView
 }) {
   return (
     <aside className="gemini-sidebar">
@@ -58,37 +53,18 @@ export default function GeminiSidebar({
           <button 
             className={`sidebar-icon-btn ${activeView === 'search' ? 'active' : ''}`}
             onClick={onNewChat}
-            title="Explore & Search Melodies"
+            title="Search"
           >
             <Search size={20} />
           </button>
 
-          {/* 3. Voice Avatars & Gems */}
+          {/* 3. Library (Search ke theek niche) */}
           <button 
-            className={`sidebar-icon-btn ${activeView === 'avatars' ? 'active' : ''}`}
-            onClick={onOpenAvatars}
-            title="Voice Avatars & Personas (Aarav, Zara, My Voice)"
+            className={`sidebar-icon-btn ${activeView === 'library' ? 'active' : ''}`}
+            onClick={onOpenLibrary}
+            title="Library"
           >
-            <LayoutGrid size={20} />
-            <span className="sidebar-indicator-dot"></span>
-          </button>
-
-          {/* 4. History / Creations */}
-          <button 
-            className={`sidebar-icon-btn ${activeView === 'history' ? 'active' : ''}`}
-            onClick={onOpenHistory}
-            title="History & Created Songs"
-          >
-            <History size={20} />
-          </button>
-
-          {/* 5. Studio Guide */}
-          <button 
-            className="sidebar-icon-btn"
-            onClick={() => window.open('https://github.com/indrajitkumar23541-a11y/SONARA', '_blank')}
-            title="Documentation & GitHub Guide"
-          >
-            <GraduationCap size={21} />
+            <Library size={20} />
           </button>
         </div>
       </div>

@@ -200,11 +200,9 @@ export default function App() {
       {/* 1. Left Slim Vertical Sidebar (Matches screenshot with red glow) */}
       <GeminiSidebar 
         onNewChat={handleResetToNewChat}
-        onOpenAvatars={() => setIsAvatarModalOpen(true)}
-        onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+        onOpenLibrary={() => setIsHistoryDrawerOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        activeView={isAvatarModalOpen ? 'avatars' : isHistoryDrawerOpen ? 'history' : 'chat'}
-        voiceProfile={voiceProfile}
+        activeView={isHistoryDrawerOpen ? 'library' : 'chat'}
       />
 
       {/* 2. Main Workstation Area */}

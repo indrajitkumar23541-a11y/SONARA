@@ -14,8 +14,8 @@ export default function HistoryDrawer({
       <div className="gemini-drawer-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header-row">
           <div className="modal-title-group">
-            <h2 className="modal-headline">Song History & Creations</h2>
-            <p className="modal-subhead">Recently synthesized master tracks</p>
+            <h2 className="modal-headline">Library</h2>
+            <p className="modal-subhead">Your synthesized songs, master tracks & creations</p>
           </div>
           <button className="modal-close-btn" onClick={onClose}>
             <X size={20} />
