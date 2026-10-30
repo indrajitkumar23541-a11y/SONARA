@@ -1,33 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import Header from './components/Header';
-import LyricsStudio from './components/LyricsStudio';
-import VoiceEnrollment from './components/VoiceEnrollment';
-import SynthesisPipeline from './components/SynthesisPipeline';
-import StudioPlayer from './components/StudioPlayer';
+import React, { useState, useEffect, useRef } from 'react';
+import GeminiSidebar from './components/GeminiSidebar';
+import GeminiTopNav from './components/GeminiTopNav';
+import VoiceAvatarModal from './components/VoiceAvatarModal';
+import HistoryDrawer from './components/HistoryDrawer';
 import ApiSettingsModal from './components/ApiSettingsModal';
+import GeminiSongPlayerCard from './components/GeminiSongPlayerCard';
 import { sonaraAudio } from './utils/audioEngine';
 import { 
   GENRES, 
   SAMPLE_VOICE_PROFILES, 
   MUSICAL_SCALES 
 } from './utils/constants';
+import { 
+  Plus, 
+  Mic, 
+  MicOff, 
+  ArrowUp, 
+  Sparkles, 
+  FileText, 
+  ChevronDown, 
+  Music,
+  Compass,
+  RefreshCw,
+  RotateCcw
+} from 'lucide-react';
 import './App.css';
 
-const INITIAL_PROMPT_LYRICS = `[Verse 1]
-Tere bina ye shaam dhal na saki
-Hawa bhi chupke se keh ke gayi
-Teri gali se guzri jo roshni
-Dil me nayi ek aas jagi
-
-[Chorus]
-Tu hi meri dhoon tu hi fasaana
-Dil ne seekha tujhse muskurana
-Saansein judi hain tere naam se
-Ab na juda ho ye aashiyana`;
-
-const LATEST_GENERATED_SONG = {
+const DEFAULT_INITIAL_SONG = {
   status: "success",
-  engine: "DiffRhythm2 Neural Music Foundation Engine",
+  title: "Tere Bina Ye Shaam",
   duration: 124.4,
   master_url: "/audio/master_bollywood_1793270569516.mp3",
   vocal_url: "/audio/vocal_bollywood_1793270569516.mp3",
@@ -35,8 +36,6 @@ const LATEST_GENERATED_SONG = {
   genre: "bollywood",
   musical_scale: "E Minor",
   harmonies_active: true,
-  mastering_lufs: "-14 LUFS Radio Standard",
-  message: "Full-Length Neural Bollywood Song Synthesized with Real Singing Melody!",
   lines: [
     { text: "Tere bina ye shaam dhal na saki", start_time: 0.0, end_time: 15.6 },
     { text: "Hawa bhi chupke se keh ke gayi", start_time: 15.6, end_time: 31.1 },
@@ -50,140 +49,400 @@ const LATEST_GENERATED_SONG = {
 };
 
 export default function App() {
-  const [activeStep, setActiveStep] = useState(1); // Start on Step 1: Voice Avatar!
-  const [lyrics, setLyrics] = useState(INITIAL_PROMPT_LYRICS);
-  const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
-  const [selectedScale, setSelectedScale] = useState(MUSICAL_SCALES[0]); // E Minor Bollywood
-  const [selectedInstruments, setSelectedInstruments] = useState(['guitar', 'tabla', 'flute', 'strings']);
-  const [enableHarmonies, setEnableHarmonies] = useState(true);
-  const [enableSidechain, setEnableSidechain] = useState(true);
-  const [vocalTuning, setVocalTuning] = useState(50);
-  const [vocalReverb, setVocalReverb] = useState(40);
-  const [voiceProfile, setVoiceProfile] = useState(SAMPLE_VOICE_PROFILES[0]);
-  const [songGenerated, setSongGenerated] = useState(true);
-  const [songData, setSongData] = useState(LATEST_GENERATED_SONG);
+  const [promptInput, setPromptInput] = useState('');
+  const [selectedModel, setSelectedModel] = useState('Flash-Lite');
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+
+  // Modals & Drawers
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isProMode, setIsProMode] = useState(false); // Default: Easy Mode for everyone!
 
-  useEffect(() => {
-    // Configure audio engine with the latest generated masterpiece
-    sonaraAudio.setRealAudioUrls(
-      LATEST_GENERATED_SONG.vocal_url,
-      LATEST_GENERATED_SONG.music_url,
-      LATEST_GENERATED_SONG.master_url,
-      LATEST_GENERATED_SONG.duration
-    );
-  }, []);
+  // Song Generation & Chat State
+  const [voiceProfile, setVoiceProfile] = useState(SAMPLE_VOICE_PROFILES[0]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingStep, setGeneratingStep] = useState('');
+  const [generatedSong, setGeneratedSong] = useState(null);
+  const [lyrics, setLyrics] = useState('');
+  const [historySongs, setHistorySongs] = useState([DEFAULT_INITIAL_SONG]);
 
-  const handleProceedToLyrics = () => {
-    setActiveStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const textareaRef = useRef(null);
+
+  // Speech Recognition
+  const handleSpeechInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Aapke browser me speech recognition support nahi hai. Chrome ya Edge use karein!");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'hi-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setPromptInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+        }
+        setIsListening(false);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+      recognition.start();
+    } catch (e) {
+      setIsListening(false);
+    }
   };
 
-  const handleProceedToAvatar = () => {
-    setActiveStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Main Prompt Submission & Song Synthesis
+  const handleGenerateSong = async (promptToUse = promptInput) => {
+    const cleanPrompt = promptToUse.trim();
+    if (!cleanPrompt) return;
+
+    setIsGenerating(true);
+    setGeneratingStep('Calibrating lyrical theme & Raag scales...');
+
+    try {
+      // 1. Generate Lyrics from Prompt
+      let songLyrics = '';
+      try {
+        const lyricRes = await fetch('http://127.0.0.1:8000/api/generate-lyrics-from-prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: cleanPrompt,
+            genre_id: 'bollywood',
+            voice_avatar_name: voiceProfile.name
+          }),
+        });
+        if (lyricRes.ok) {
+          const lData = await lyricRes.json();
+          songLyrics = lData.lyrics;
+        }
+      } catch (err) {
+        console.warn("Using fallback lyrics generator:", err);
+      }
+
+      if (!songLyrics) {
+        songLyrics = `[Verse 1]\nTere bina ye shaam dhal na saki\nHawa bhi chupke se keh ke gayi\n\n[Chorus]\nTu hi meri dhoon tu hi fasaana\nDil ne seekha tujhse muskurana\n\n[Outro]\nAb na juda ho ye aashiyana`;
+      }
+      setLyrics(songLyrics);
+
+      // 2. Synthesize Song
+      setGeneratingStep(`Synthesizing master vocals in ${voiceProfile.name} timbre...`);
+      const songRes = await fetch('http://127.0.0.1:8000/api/generate-song', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lyrics: songLyrics,
+          prompt: cleanPrompt,
+          genre_id: 'bollywood',
+          musical_scale: 'Em',
+          voice_profile_id: voiceProfile.id,
+          voice_gender: voiceProfile.voiceGender || 'male',
+          vocal_tuning: 50,
+          vocal_reverb: 40,
+          enable_harmonies: true,
+          enable_sidechain: true,
+          enable_mastering: true
+        }),
+      });
+
+      if (!songRes.ok) {
+        throw new Error(`Server returned status ${songRes.status}`);
+      }
+
+      const songData = await songRes.json();
+      const finalSong = {
+        ...songData,
+        title: cleanPrompt.slice(0, 36),
+        voice_name: voiceProfile.name,
+      };
+
+      setGeneratedSong(finalSong);
+      setHistorySongs((prev) => [finalSong, ...prev]);
+
+    } catch (err) {
+      console.warn("Synthesis fallback:", err);
+      // Fallback preview
+      const fallback = {
+        ...DEFAULT_INITIAL_SONG,
+        title: cleanPrompt.slice(0, 36) || 'Original AI Bollywood Track',
+        voice_name: voiceProfile.name,
+      };
+      setGeneratedSong(fallback);
+      setLyrics(DEFAULT_INITIAL_SONG.lines.map(l => l.text).join('\n'));
+      setHistorySongs((prev) => [fallback, ...prev]);
+    } finally {
+      setIsGenerating(false);
+      setGeneratingStep('');
+    }
   };
 
-  const handleProceedToSynthesis = () => {
-    setActiveStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleSelectSuggestion = (suggestionText) => {
+    setPromptInput(suggestionText);
+    handleGenerateSong(suggestionText);
   };
 
-  const handleSynthesisComplete = (generatedData) => {
-    setSongData(generatedData);
-    setSongGenerated(true);
-    setActiveStep(4);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleResetSong = () => {
-    setActiveStep(2); // Go to Prompt & Lyrics to easily compose another song with current avatar
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleResetToNewChat = () => {
+    setGeneratedSong(null);
+    setPromptInput('');
+    sonaraAudio.stopStemPlayback();
   };
 
   return (
-    <div className="app-container">
-      {/* Top Studio Header */}
-      <Header
-        activeStep={activeStep}
-        setActiveStep={setActiveStep}
-        voiceReady={true}
-        songGenerated={songGenerated}
+    <div className="gemini-app-layout">
+      {/* 1. Left Slim Vertical Sidebar (Matches screenshot with red glow) */}
+      <GeminiSidebar 
+        onNewChat={handleResetToNewChat}
+        onOpenAvatars={() => setIsAvatarModalOpen(true)}
+        onOpenHistory={() => setIsHistoryDrawerOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        isProMode={isProMode}
-        setIsProMode={setIsProMode}
+        activeView={isAvatarModalOpen ? 'avatars' : isHistoryDrawerOpen ? 'history' : 'chat'}
+        voiceProfile={voiceProfile}
       />
 
-      {/* Main Studio Viewport */}
-      <main className="main-content">
-        {/* STEP 1: VOICE AVATAR (Input Voice Calibration & Avatar Creation) */}
-        {activeStep === 1 && (
-          <VoiceEnrollment
-            voiceProfile={voiceProfile}
-            setVoiceProfile={setVoiceProfile}
-            onProceedToLyrics={handleProceedToLyrics}
-            isProMode={isProMode}
-          />
-        )}
+      {/* 2. Main Workstation Area */}
+      <div className="gemini-main-canvas">
+        {/* Top Right Controls (Matches screenshot) */}
+        <GeminiTopNav 
+          onNewChat={handleResetToNewChat}
+          onDownloadApp={() => {
+            const a = document.createElement('a');
+            a.href = generatedSong?.master_url || DEFAULT_INITIAL_SONG.master_url;
+            a.download = 'SONARA_Master.mp3';
+            a.click();
+          }}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
 
-        {/* STEP 2: PROMPT & LYRICS STUDIO (Song Idea Prompt + AI Lyrics) */}
-        {activeStep === 2 && (
-          <LyricsStudio
-            lyrics={lyrics}
-            setLyrics={setLyrics}
-            selectedGenre={selectedGenre}
-            setSelectedGenre={setSelectedGenre}
-            selectedScale={selectedScale}
-            setSelectedScale={setSelectedScale}
-            selectedInstruments={selectedInstruments}
-            setSelectedInstruments={setSelectedInstruments}
-            enableHarmonies={enableHarmonies}
-            setEnableHarmonies={setEnableHarmonies}
-            enableSidechain={enableSidechain}
-            setEnableSidechain={setEnableSidechain}
-            vocalTuning={vocalTuning}
-            setVocalTuning={setVocalTuning}
-            vocalReverb={vocalReverb}
-            setVocalReverb={setVocalReverb}
-            voiceProfile={voiceProfile}
-            onProceedToSynthesis={handleProceedToSynthesis}
-            onBackToAvatar={handleProceedToAvatar}
-            isProMode={isProMode}
-          />
-        )}
+        {/* Center Content Canvas */}
+        <div className="gemini-center-content">
+          {!generatedSong && !isGenerating ? (
+            /* --- Initial "Where should we start?" State --- */
+            <div className="gemini-hero-container">
+              {/* Centered Large Title */}
+              <h1 className="gemini-hero-title">
+                Where should we start?
+              </h1>
 
-        {/* STEP 3: CREATION & SYNTHESIS ENGINE */}
-        {activeStep === 3 && (
-          <SynthesisPipeline
-            lyrics={lyrics}
-            selectedGenre={selectedGenre}
-            selectedScale={selectedScale}
-            selectedInstruments={selectedInstruments}
-            enableHarmonies={enableHarmonies}
-            enableSidechain={enableSidechain}
-            voiceProfile={voiceProfile}
-            vocalTuning={vocalTuning}
-            vocalReverb={vocalReverb}
-            onComplete={handleSynthesisComplete}
-          />
-        )}
+              {/* Iconic Center Capsule Input Box */}
+              <div className="gemini-prompt-capsule-card">
+                <div className="capsule-input-row">
+                  {/* Left Plus Button (Opens Voice Avatar / Options) */}
+                  <button 
+                    type="button"
+                    className="capsule-plus-btn"
+                    onClick={() => setIsAvatarModalOpen(true)}
+                    title="Choose / Calibrate Voice Avatar"
+                  >
+                    <Plus size={18} />
+                  </button>
 
-        {/* STEP 4: COMMERCIAL MASTER PLAYER */}
-        {activeStep === 4 && (
-          <StudioPlayer
-            lyrics={lyrics}
-            selectedGenre={selectedGenre}
-            voiceProfile={voiceProfile}
-            songData={songData}
-            onResetSong={handleResetSong}
-            isProMode={isProMode}
-          />
-        )}
-      </main>
+                  {/* Main Text Input */}
+                  <input
+                    ref={textareaRef}
+                    type="text"
+                    className="capsule-text-input"
+                    placeholder="Ask Sonara"
+                    value={promptInput}
+                    onChange={(e) => setPromptInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleGenerateSong();
+                      }
+                    }}
+                  />
 
-      {/* Cloud & AI API Configuration Modal */}
-      <ApiSettingsModal
+                  {/* Model Selector Dropdown Pill */}
+                  <div className="capsule-model-wrapper">
+                    <button 
+                      type="button"
+                      className="capsule-model-pill"
+                      onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                    >
+                      <span>{selectedModel}</span>
+                      <ChevronDown size={14} />
+                    </button>
+
+                    {isModelDropdownOpen && (
+                      <div className="model-menu-dropdown">
+                        <div 
+                          className={`model-menu-item ${selectedModel === 'Flash-Lite' ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedModel('Flash-Lite');
+                            setIsModelDropdownOpen(false);
+                          }}
+                        >
+                          <strong>Flash-Lite</strong>
+                          <span>Fast synthesis with local acoustic studio</span>
+                        </div>
+                        <div 
+                          className={`model-menu-item ${selectedModel === 'Sonara-Pro' ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedModel('Sonara-Pro');
+                            setIsModelDropdownOpen(false);
+                          }}
+                        >
+                          <strong>Sonara-Pro (DiffRhythm2)</strong>
+                          <span>High-fidelity neural singing foundation model</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Microphone Button (Speech to text) */}
+                  <button 
+                    type="button"
+                    className={`capsule-mic-btn ${isListening ? 'active-listening' : ''}`}
+                    onClick={handleSpeechInput}
+                    title="Microphone dabakar boliye"
+                  >
+                    {isListening ? (
+                      <MicOff size={18} className="text-red-primary animate-pulse" />
+                    ) : (
+                      <Mic size={18} />
+                    )}
+                  </button>
+
+                  {/* Send Button (Visible when text entered) */}
+                  {promptInput.trim() && (
+                    <button 
+                      type="button"
+                      className="capsule-send-btn animate-fadeIn"
+                      onClick={() => handleGenerateSong()}
+                      title="Generate Song"
+                    >
+                      <ArrowUp size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 3 Suggestions below Prompt Box (Matches screenshot layout) */}
+              <div className="gemini-suggestions-deck">
+                {/* 1. Debug Python Code equivalent -> Compose Romantic Song */}
+                <button 
+                  className="suggestion-tile"
+                  onClick={() => handleSelectSuggestion('Help me compose a romantic Bollywood rain song with acoustic guitar')}
+                >
+                  <FileText size={18} className="tile-icon" />
+                  <span className="tile-text">Help me compose a romantic Bollywood rain song</span>
+                </button>
+
+                {/* 2. Design Poster equivalent -> Calibrate Voice Avatar */}
+                <button 
+                  className="suggestion-tile"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                >
+                  <Sparkles size={18} className="tile-icon" />
+                  <span className="tile-text">Calibrate my 5-second AI Voice Avatar</span>
+                </button>
+
+                {/* 3. Big Life Decision equivalent -> Party Dance Track */}
+                <button 
+                  className="suggestion-tile"
+                  onClick={() => handleSelectSuggestion('Help me create an energetic high-speed Bollywood party dance track')}
+                >
+                  <Compass size={18} className="tile-icon" />
+                  <span className="tile-text">Help me create an energetic high-speed party anthem</span>
+                </button>
+              </div>
+
+              {/* Current Active Avatar Mini-Badge */}
+              <div className="active-avatar-pill-bottom" onClick={() => setIsAvatarModalOpen(true)}>
+                <span>Active Singer Avatar:</span>
+                <strong className="text-red-primary">{voiceProfile.name}</strong>
+                <span className="change-link">Change</span>
+              </div>
+            </div>
+          ) : isGenerating ? (
+            /* --- Generating Song Status --- */
+            <div className="gemini-generating-container">
+              <div className="generating-red-spinner">
+                <RefreshCw size={36} className="animate-spin text-red-primary" />
+              </div>
+              <h2 className="generating-headline">Composing & Synthesizing Master Audio</h2>
+              <p className="generating-subtext">{generatingStep || 'Processing musical notes and vocal harmonics...'}</p>
+            </div>
+          ) : (
+            /* --- Song Generated State: Studio Player Card View --- */
+            <div className="gemini-thread-container">
+              {/* User Query Pill */}
+              <div className="user-query-bubble">
+                <span>{promptInput || 'Compose a romantic Bollywood song'}</span>
+              </div>
+
+              {/* Sonara AI Response with Master Audio Player */}
+              <GeminiSongPlayerCard 
+                songData={generatedSong}
+                lyrics={lyrics}
+                voiceProfile={voiceProfile}
+                selectedGenre={GENRES[0]}
+                onReset={handleResetToNewChat}
+              />
+
+              {/* Quick Follow-up Input Bar at bottom */}
+              <div className="followup-input-container">
+                <div className="capsule-input-row followup-capsule">
+                  <button 
+                    type="button" 
+                    className="capsule-plus-btn"
+                    onClick={() => setIsAvatarModalOpen(true)}
+                  >
+                    <Plus size={18} />
+                  </button>
+                  <input 
+                    type="text" 
+                    className="capsule-text-input" 
+                    placeholder="Ask Sonara to refine, change singer, or make another song..."
+                    value={promptInput}
+                    onChange={(e) => setPromptInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleGenerateSong();
+                    }}
+                  />
+                  <button 
+                    type="button" 
+                    className="capsule-send-btn"
+                    onClick={() => handleGenerateSong()}
+                  >
+                    <ArrowUp size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Voice Avatar Calibration Modal */}
+      <VoiceAvatarModal 
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        voiceProfile={voiceProfile}
+        setVoiceProfile={setVoiceProfile}
+      />
+
+      {/* 4. History Drawer */}
+      <HistoryDrawer 
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => setIsHistoryDrawerOpen(false)}
+        historySongs={historySongs}
+        onSelectSong={(song) => {
+          setGeneratedSong(song);
+          setLyrics(song.lines ? song.lines.map(l => l.text).join('\n') : '');
+        }}
+      />
+
+      {/* 5. Cloud GPU & Engine Settings Modal */}
+      <ApiSettingsModal 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
