@@ -5,6 +5,7 @@ import VoiceAvatarModal from './components/VoiceAvatarModal';
 import HistoryDrawer from './components/HistoryDrawer';
 import ApiSettingsModal from './components/ApiSettingsModal';
 import GeminiSongPlayerCard from './components/GeminiSongPlayerCard';
+import GeminiToolsMenu from './components/GeminiToolsMenu';
 import { sonaraAudio } from './utils/audioEngine';
 import { 
   GENRES, 
@@ -13,6 +14,7 @@ import {
 } from './utils/constants';
 import { 
   Plus, 
+  X,
   Mic, 
   MicOff, 
   ArrowUp, 
@@ -22,7 +24,8 @@ import {
   Music,
   Compass,
   RefreshCw,
-  RotateCcw
+  RotateCcw,
+  CheckCircle2
 } from 'lucide-react';
 import './App.css';
 
@@ -68,6 +71,53 @@ export default function App() {
   const [historySongs, setHistorySongs] = useState([DEFAULT_INITIAL_SONG]);
 
   const textareaRef = useRef(null);
+
+  // Gemini + Tools Popup Menu States
+  const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
+  const [isFollowupPlusOpen, setIsFollowupPlusOpen] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState('');
+
+  // 1. Upload Audio / Vocals Handler
+  const handleAudioSelected = (file) => {
+    const audioUrl = URL.createObjectURL(file);
+    const avatarName = file.name.replace(/\.[^/.]+$/, "").slice(0, 18);
+    setVoiceProfile({
+      id: `custom_${Date.now()}`,
+      name: `${avatarName} (Custom Voice)`,
+      type: 'user_cloned',
+      badge: 'User Calibrated',
+      sampleUrl: audioUrl,
+      customAudioUrl: audioUrl,
+      voiceGender: 'male'
+    });
+    setUploadNotice(`Vocal track loaded: ${file.name}`);
+    setTimeout(() => setUploadNotice(''), 4500);
+  };
+
+  // 2. Upload Lyrics File Handler
+  const handleLyricsSelected = (filename, content) => {
+    setLyrics(content);
+    const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
+    const sampleLine = lines[0] || 'Original Lyrics';
+    setPromptInput(`Sing lyrics: "${sampleLine.slice(0, 40)}..."`);
+    setUploadNotice(`Lyrics loaded: ${filename} (${lines.length} lines)`);
+    setTimeout(() => setUploadNotice(''), 4500);
+    if (textareaRef.current) textareaRef.current.focus();
+  };
+
+  // 3. Create Bollywood / Classical / Pop Track Handler
+  const handleGenreSelected = (genre) => {
+    let presetPrompt = '';
+    if (genre === 'bollywood') {
+      presetPrompt = 'Soulful romantic Bollywood melody with acoustic guitar, emotive strings, and gentle flute';
+    } else if (genre === 'classical') {
+      presetPrompt = 'Classical Hindustani Raag Yaman bandish with harmonium, sitar, and expressive tabla';
+    } else if (genre === 'pop') {
+      presetPrompt = 'High-energy modern Bollywood Pop track with punchy 808 bass, synth groove, and catchy hook';
+    }
+    setPromptInput(presetPrompt);
+    if (textareaRef.current) textareaRef.current.focus();
+  };
 
   // Speech Recognition
   const handleSpeechInput = () => {
@@ -231,16 +281,36 @@ export default function App() {
 
               {/* Iconic Center Capsule Input Box */}
               <div className="gemini-prompt-capsule-card">
+                {/* Upload / Preset Status Toast Notice */}
+                {uploadNotice && (
+                  <div className="upload-notice-toast animate-fadeIn">
+                    <CheckCircle2 size={16} className="text-red-primary" />
+                    <span>{uploadNotice}</span>
+                  </div>
+                )}
+
                 <div className="capsule-input-row">
-                  {/* Left Plus Button (Opens Voice Avatar / Options) */}
-                  <button 
-                    type="button"
-                    className="capsule-plus-btn"
-                    onClick={() => setIsAvatarModalOpen(true)}
-                    title="Choose / Calibrate Voice Avatar"
-                  >
-                    <Plus size={18} />
-                  </button>
+                  {/* Left Plus Button (Opens Gemini Tools Menu) */}
+                  <div className="capsule-plus-wrapper">
+                    <button 
+                      type="button"
+                      className={`capsule-plus-btn ${isPlusMenuOpen ? 'active' : ''}`}
+                      onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
+                      title={isPlusMenuOpen ? "Close menu" : "Upload Audio, Lyrics or Track Presets"}
+                    >
+                      {isPlusMenuOpen ? <X size={18} /> : <Plus size={18} />}
+                    </button>
+
+                    <GeminiToolsMenu 
+                      isOpen={isPlusMenuOpen}
+                      onClose={() => setIsPlusMenuOpen(false)}
+                      onAudioSelected={handleAudioSelected}
+                      onLyricsSelected={handleLyricsSelected}
+                      onGenreSelected={handleGenreSelected}
+                      onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+                      direction="bottom"
+                    />
+                  </div>
 
                   {/* Main Text Input */}
                   <input
@@ -389,13 +459,26 @@ export default function App() {
               {/* Quick Follow-up Input Bar at bottom */}
               <div className="followup-input-container">
                 <div className="capsule-input-row followup-capsule">
-                  <button 
-                    type="button" 
-                    className="capsule-plus-btn"
-                    onClick={() => setIsAvatarModalOpen(true)}
-                  >
-                    <Plus size={18} />
-                  </button>
+                  <div className="capsule-plus-wrapper">
+                    <button 
+                      type="button" 
+                      className={`capsule-plus-btn ${isFollowupPlusOpen ? 'active' : ''}`}
+                      onClick={() => setIsFollowupPlusOpen(!isFollowupPlusOpen)}
+                      title={isFollowupPlusOpen ? "Close menu" : "Upload Audio, Lyrics or Track Presets"}
+                    >
+                      {isFollowupPlusOpen ? <X size={18} /> : <Plus size={18} />}
+                    </button>
+
+                    <GeminiToolsMenu 
+                      isOpen={isFollowupPlusOpen}
+                      onClose={() => setIsFollowupPlusOpen(false)}
+                      onAudioSelected={handleAudioSelected}
+                      onLyricsSelected={handleLyricsSelected}
+                      onGenreSelected={handleGenreSelected}
+                      onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+                      direction="top"
+                    />
+                  </div>
                   <input 
                     type="text" 
                     className="capsule-text-input" 

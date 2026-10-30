@@ -424,6 +424,221 @@ body {
   border-color: var(--border-red);
 }
 
+.capsule-plus-btn.active {
+  background: rgba(239, 68, 68, 0.22);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+.capsule-plus-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Floating Tools Menu anchored to Plus Button (Google Gemini Style) */
+.gemini-tools-menu {
+  position: absolute;
+  width: 320px;
+  background: #14080b;
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  border-radius: 20px;
+  padding: 0.55rem;
+  box-shadow: 
+    0 24px 50px -10px rgba(0, 0, 0, 0.88),
+    0 0 35px rgba(239, 68, 68, 0.15);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.gemini-tools-menu.direction-bottom {
+  top: calc(100% + 14px);
+  left: 0;
+}
+
+.gemini-tools-menu.direction-top {
+  bottom: calc(100% + 14px);
+  left: 0;
+}
+
+.tools-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 0.85rem;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  color: #e2e8f0;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tools-menu-item:hover,
+.tools-menu-item.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.tools-menu-item:hover .menu-item-icon {
+  color: var(--red-primary);
+  background: rgba(239, 68, 68, 0.15);
+  transform: scale(1.08);
+}
+
+.menu-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.menu-item-icon.text-red {
+  color: var(--red-primary);
+}
+
+.menu-item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.menu-item-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+}
+
+.menu-item-desc {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tools-menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0.3rem 0.4rem;
+}
+
+.tools-menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.with-submenu {
+  justify-content: space-between;
+}
+
+.chevron-indicator {
+  color: #64748b;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevron-indicator.rotated {
+  transform: rotate(90deg);
+  color: var(--red-primary);
+}
+
+.genre-subitems-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.35rem 0.4rem 0.35rem 1.25rem;
+  border-left: 2px solid rgba(239, 68, 68, 0.35);
+  margin-left: 1.15rem;
+  margin-top: 0.2rem;
+}
+
+.genre-subitem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.45rem 0.65rem;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: #cbd5e1;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.genre-subitem:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ffffff;
+}
+
+.genre-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.genre-dot.bollywood { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+.genre-dot.classical { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.genre-dot.pop { background: #ec4899; box-shadow: 0 0 6px #ec4899; }
+
+.genre-subitem-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.genre-subitem-text strong {
+  font-size: 0.82rem;
+  color: #f8fafc;
+  font-weight: 500;
+}
+
+.genre-subitem-text span {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.upload-notice-toast {
+  position: absolute;
+  top: -46px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(24, 9, 12, 0.95);
+  border: 1px solid var(--red-primary);
+  color: #ffffff;
+  padding: 0.45rem 1.1rem;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
 /* Main Text Input */
 .capsule-text-input {
   flex: 1;
