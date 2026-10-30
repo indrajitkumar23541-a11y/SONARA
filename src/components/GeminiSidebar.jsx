@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   SquarePen, 
   Search, 
-  Library, 
+  LayoutGrid, 
   Settings, 
   Sparkles
 } from 'lucide-react';
@@ -58,13 +58,13 @@ export default function GeminiSidebar({
             <Search size={20} />
           </button>
 
-          {/* 3. Library (Search ke theek niche) */}
+          {/* 3. Library (4-dots grid icon matching Gemini) */}
           <button 
             className={`sidebar-icon-btn ${activeView === 'library' ? 'active' : ''}`}
             onClick={onOpenLibrary}
             title="Library"
           >
-            <Library size={20} />
+            <LayoutGrid size={20} />
           </button>
         </div>
       </div>
