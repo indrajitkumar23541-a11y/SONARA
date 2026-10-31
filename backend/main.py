@@ -13,7 +13,7 @@ def _ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
     return _orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
 socket.getaddrinfo = _ipv4_getaddrinfo
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -130,6 +130,39 @@ async def health_check():
     }
 
 
+@app.post("/api/upload-voice-avatar")
+async def upload_voice_avatar(file: UploadFile = File(...)):
+    try:
+        user_avatar_wav = PUBLIC_AUDIO_DIR / "user_voice_avatar.wav"
+        temp_input = PUBLIC_AUDIO_DIR / f"temp_upload_{int(time.time()*1000)}_{file.filename}"
+        
+        with open(temp_input, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        cmd = [
+            FFMPEG_EXE, "-y",
+            "-i", str(temp_input),
+            "-ar", "16000",
+            "-ac", "1",
+            str(user_avatar_wav)
+        ]
+        subprocess.run(cmd, check=True)
+        if temp_input.exists():
+            try:
+                temp_input.unlink()
+            except Exception:
+                pass
+            
+        return {
+            "status": "success",
+            "message": "User voice avatar calibrated & registered successfully!",
+            "avatar_url": f"http://127.0.0.1:8000/audio/{user_avatar_wav.name}"
+        }
+    except Exception as e:
+        print(f"Voice upload error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/generate-lyrics-from-prompt")
 async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
     prompt_raw = req.prompt.strip()
@@ -138,14 +171,50 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
 
     prompt_lower = prompt_raw.lower()
 
-    # Intelligent Theme & Concept Detection
+    # 1. Check if user already entered direct multi-line lyrics!
+    raw_lines = [l.strip() for l in prompt_raw.splitlines() if l.strip()]
+    has_verse_markers = bool(re.search(r"\[(verse|chorus|hook|bridge|outro|intro)\]", prompt_raw, re.I))
+    if len(raw_lines) >= 2 or has_verse_markers:
+        title = raw_lines[0].replace("[", "").replace("]", "").strip()[:35].title()
+        is_sad_l = any(k in prompt_lower for k in ["sad", "dard", "judai", "tuta", "roona", "tanha", "bichhad", "broken"])
+        is_party_l = any(k in prompt_lower for k in ["party", "nacho", "dance", "club", "dhamaka", "dj", "edm"])
+        is_bhajan_l = any(k in prompt_lower for k in ["bhajan", "bhakti", "shiva", "krishna", "ram", "prabhu", "mandir"])
+        
+        genre_mapped = "bollywood"
+        scale = "E Minor"
+        mood_detected = "User Original Lyrics"
+        if is_party_l:
+            genre_mapped = "pop"
+            scale = "A Minor"
+            mood_detected = "High-Energy Party"
+        elif is_sad_l:
+            scale = "C# Minor"
+            mood_detected = "Soulful Melancholy"
+        elif is_bhajan_l:
+            genre_mapped = "classical"
+            scale = "C Major"
+            mood_detected = "Spiritual Devotional"
+
+        return {
+            "status": "success",
+            "title": title or "Original Lyrics Composition",
+            "prompt": prompt_raw,
+            "lyrics": prompt_raw,
+            "mood": mood_detected,
+            "genre": genre_mapped,
+            "recommended_scale": scale,
+            "line_count": len([l for l in raw_lines if not l.startswith("[")])
+        }
+
+    # 2. Intelligent Theme & Concept Detection from Prompt
     is_rain = any(k in prompt_lower for k in ["barish", "rain", "barsaat", "boondein", "monsoon", "badal"])
-    is_sad = any(k in prompt_lower for k in ["sad", "dard", "judai", "tuta", "roona", "tanha", "bichhad", "broken"])
-    is_party = any(k in prompt_lower for k in ["party", "nacho", "dance", "club", "dhamaka", "jashn", "dj", "masti"])
-    is_bhajan = any(k in prompt_lower for k in ["bhajan", "bhakti", "shiva", "krishna", "ram", "prabhu", "mandir", "sukoon"])
+    is_sad = any(k in prompt_lower for k in ["sad", "dard", "judai", "tuta", "roona", "tanha", "bichhad", "broken", "heartbreak"])
+    is_party = any(k in prompt_lower for k in ["party", "nacho", "dance", "club", "dhamaka", "jashn", "dj", "masti", "edm", "beat"])
+    is_bhajan = any(k in prompt_lower for k in ["bhajan", "bhakti", "shiva", "krishna", "ram", "prabhu", "mandir", "sukoon", "peace", "sufi"])
     is_dosti = any(k in prompt_lower for k in ["dosti", "yaar", "friend", "dost", "yaari", "college", "school"])
     is_birthday = any(k in prompt_lower for k in ["birthday", "janamdin", "mubarak", "badhai"])
     is_lori = any(k in prompt_lower for k in ["lori", "chanda", "soja", "bachha", "nindiya", "raat"])
+    is_love = any(k in prompt_lower for k in ["love", "pyar", "ishq", "mohabbat", "romantic", "romance", "sanam", "dil"])
 
     # Extract clean topic title
     first_phrase = prompt_raw.split(".")[0].split(",")[0]
@@ -331,7 +400,16 @@ async def generate_song(req: SongGenerationRequest):
 
     lang = detect_language(req.lyrics)
 
-    # 1. Voice Model Selection (Arijit / Kumar Sanu baritone vs Shreya / Zara soprano)
+    # 1. Voice Model Selection & Avatar Calibration
+    user_avatar_path = PUBLIC_AUDIO_DIR / "user_voice_avatar.wav"
+    is_user_avatar = (
+        req.voice_profile_id == "profile_user" or 
+        "custom" in req.voice_profile_id.lower() or 
+        "user" in req.voice_profile_id.lower() or
+        "avatar" in (req.voice_avatar_name or "").lower()
+    )
+    has_custom_avatar_file = user_avatar_path.exists() and is_user_avatar
+
     if "zara" in req.voice_profile_id.lower() or req.voice_gender == "female":
         voice_name = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
     else:
@@ -358,20 +436,28 @@ async def generate_song(req: SongGenerationRequest):
             f"acoustic guitar, soft piano, strings, bansuri flute, 85 bpm"
         )
 
-        print(f"[{time.strftime('%X')}] 🎵 Calling DiffRhythm2 Neural Music Engine...")
-        hf_client = Client("ASLP-lab/DiffRhythm2")
-        gen_path = hf_client.predict(
-            lrc=formatted_lrc,
-            audio_prompt=None,
-            text_prompt=style_prompt,
-            seed=random.randint(1, 99999),
-            randomize_seed=True,
-            steps=16,
-            cfg_strength=1.3,
-            file_type="mp3",
-            odeint_method="euler",
-            api_name="/infer_music"
-        )
+        audio_prompt_arg = str(user_avatar_path) if has_custom_avatar_file else None
+        print(f"[{time.strftime('%X')}] 🎵 Calling DiffRhythm2 Neural Music Engine (Custom Avatar: {has_custom_avatar_file})...")
+        import concurrent.futures
+
+        def _call_diffrhythm():
+            hf_client = Client("ASLP-lab/DiffRhythm2")
+            return hf_client.predict(
+                lrc=formatted_lrc,
+                audio_prompt=audio_prompt_arg,
+                text_prompt=style_prompt,
+                seed=random.randint(1, 99999),
+                randomize_seed=True,
+                steps=16,
+                cfg_strength=1.3,
+                file_type="mp3",
+                odeint_method="euler",
+                api_name="/infer_music"
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_call_diffrhythm)
+            gen_path = future.result(timeout=18)
 
         if gen_path and os.path.exists(gen_path):
             shutil.copyfile(gen_path, str(master_song_path))
@@ -556,6 +642,7 @@ async def generate_song(req: SongGenerationRequest):
             "end_time": end_t
         })
 
+    voice_display_name = req.voice_avatar_name or voice_name
     return {
         "status": "success",
         "song_id": f"sonara_{timestamp}",
@@ -563,14 +650,15 @@ async def generate_song(req: SongGenerationRequest):
         "music_url": f"http://127.0.0.1:8000/audio/{backing_file.name}",
         "master_url": master_url,
         "duration": exact_duration,
-        "voice_used": voice_name,
+        "voice_used": voice_display_name,
+        "is_custom_avatar": is_user_avatar,
         "genre": req.genre_id,
         "musical_scale": req.musical_scale,
         "harmonies_active": req.enable_harmonies,
         "mastering_lufs": "-14 LUFS Radio Standard",
         "lines": timed_lines,
         "raw_lines": cleaned_lines,
-        "message": f"Professional Bollywood Studio Master created in {req.musical_scale} with Double-Tracking & -14 LUFS Polish!"
+        "message": f"Professional Studio Master created with {voice_display_name} in {req.musical_scale}!"
     }
 
 

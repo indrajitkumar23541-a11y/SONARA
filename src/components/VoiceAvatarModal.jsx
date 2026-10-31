@@ -114,11 +114,26 @@ export default function VoiceAvatarModal({
       if (result && result.url) {
         setRecordedAudioUrl(result.url);
         setRecordedSuccess(true);
+
+        // Upload voice recording to backend for voice avatar synthesis
+        if (result.blob) {
+          try {
+            const formData = new FormData();
+            formData.append('file', result.blob, 'voice_scan.webm');
+            await fetch('http://127.0.0.1:8000/api/upload-voice-avatar', {
+              method: 'POST',
+              body: formData
+            });
+          } catch (uploadErr) {
+            console.warn("Could not sync voice avatar to server:", uploadErr);
+          }
+        }
+
         const userProfile = SAMPLE_VOICE_PROFILES.find((p) => p.id === 'profile_user');
         if (userProfile) {
           const updated = {
             ...userProfile,
-            name: customAvatarName || 'My AI Voice Avatar',
+            name: customAvatarName || 'Mera AI Voice Avatar',
             audioUrl: result.url,
             isCalibrated: true
           };

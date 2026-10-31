@@ -25,7 +25,8 @@ import {
   Compass,
   RefreshCw,
   RotateCcw,
-  CheckCircle2
+  CheckCircle2,
+  Check
 } from 'lucide-react';
 import './App.css';
 
@@ -75,23 +76,56 @@ export default function App() {
   // Gemini + Tools Popup Menu States
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isFollowupPlusOpen, setIsFollowupPlusOpen] = useState(false);
+  const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
   const [uploadNotice, setUploadNotice] = useState('');
+  const avatarDropdownRef = useRef(null);
+
+  // Close avatar selector dropdown when clicking outside
+  useEffect(() => {
+    const handleAvatarOutside = (e) => {
+      if (avatarDropdownRef.current && !avatarDropdownRef.current.contains(e.target)) {
+        setIsAvatarDropdownOpen(false);
+      }
+    };
+    if (isAvatarDropdownOpen) {
+      document.addEventListener('mousedown', handleAvatarOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleAvatarOutside);
+    };
+  }, [isAvatarDropdownOpen]);
 
   // 1. Upload Audio / Vocals Handler
-  const handleAudioSelected = (file) => {
+  const handleAudioSelected = async (file) => {
     const audioUrl = URL.createObjectURL(file);
     const avatarName = file.name.replace(/\.[^/.]+$/, "").slice(0, 18);
-    setVoiceProfile({
-      id: `custom_${Date.now()}`,
-      name: `${avatarName} (Custom Voice)`,
-      type: 'user_cloned',
-      badge: 'User Calibrated',
+    const customProf = {
+      id: 'profile_user',
+      name: `${avatarName} (My Voice)`,
+      tag: 'User Calibrated Avatar',
+      role: 'Your Personal Vocal Identity',
+      desc: `Custom voice calibrated from ${file.name}`,
+      emoji: '🎙️',
       sampleUrl: audioUrl,
       customAudioUrl: audioUrl,
-      voiceGender: 'male'
-    });
-    setUploadNotice(`Vocal track loaded: ${file.name}`);
+      voiceGender: 'male',
+      isCustom: true
+    };
+    setVoiceProfile(customProf);
+    setUploadNotice(`Voice Avatar set: ${file.name}`);
     setTimeout(() => setUploadNotice(''), 4500);
+
+    // Sync to backend for synthesis engine
+    try {
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+      await fetch('http://127.0.0.1:8000/api/upload-voice-avatar', {
+        method: 'POST',
+        body: formData
+      });
+    } catch (e) {
+      console.warn("Backend voice avatar sync:", e);
+    }
   };
 
   // 2. Upload Lyrics File Handler
@@ -149,50 +183,82 @@ export default function App() {
     }
   };
 
-  // Main Prompt Submission & Song Synthesis
+  // Main Prompt Submission & Song Synthesis (Instant 1-step like Gemini)
   const handleGenerateSong = async (promptToUse = promptInput) => {
     const cleanPrompt = promptToUse.trim();
     if (!cleanPrompt) return;
 
     setIsGenerating(true);
-    setGeneratingStep('Calibrating lyrical theme & Raag scales...');
+
+    // 1. Detect if user entered raw multi-line lyrics or a theme prompt
+    const rawLines = cleanPrompt.split('\n').map(l => l.trim()).filter(Boolean);
+    const isDirectLyrics = rawLines.length >= 2 || /\[(verse|chorus|hook|bridge|outro|intro)\]/i.test(cleanPrompt);
+
+    if (isDirectLyrics) {
+      setGeneratingStep(`Composing music & meter for your lyrics with ${voiceProfile.name}...`);
+    } else {
+      setGeneratingStep(`Writing poetic Bollywood lyrics for "${cleanPrompt.slice(0, 30)}..."`);
+    }
 
     try {
-      // 1. Generate Lyrics from Prompt
       let songLyrics = '';
-      try {
-        const lyricRes = await fetch('http://127.0.0.1:8000/api/generate-lyrics-from-prompt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: cleanPrompt,
-            genre_id: 'bollywood',
-            voice_avatar_name: voiceProfile.name
-          }),
-        });
-        if (lyricRes.ok) {
-          const lData = await lyricRes.json();
-          songLyrics = lData.lyrics;
-        }
-      } catch (err) {
-        console.warn("Using fallback lyrics generator:", err);
-      }
+      let genreToUse = 'bollywood';
+      let scaleToUse = 'Em';
+      let songTitle = cleanPrompt.split('\n')[0].replace(/\[.*?\]/g, '').trim().slice(0, 36) || 'My AI Song';
 
-      if (!songLyrics) {
-        songLyrics = `[Verse 1]\nTere bina ye shaam dhal na saki\nHawa bhi chupke se keh ke gayi\n\n[Chorus]\nTu hi meri dhoon tu hi fasaana\nDil ne seekha tujhse muskurana\n\n[Outro]\nAb na juda ho ye aashiyana`;
+      if (isDirectLyrics) {
+        // User provided direct lyrics! Keep them intact
+        songLyrics = cleanPrompt;
+        const lower = cleanPrompt.toLowerCase();
+        if (/party|dance|club|dj|edm|nacho/i.test(lower)) {
+          genreToUse = 'pop';
+          scaleToUse = 'Am';
+        } else if (/sad|dard|judai|tuta|roona|tanha|broken/i.test(lower)) {
+          scaleToUse = 'C#m';
+        } else if (/bhajan|bhakti|shiva|krishna|ram|prabhu|mandir|sukoon/i.test(lower)) {
+          genreToUse = 'classical';
+          scaleToUse = 'Cmaj';
+        }
+      } else {
+        // Call backend lyrics generation
+        try {
+          const lyricRes = await fetch('http://127.0.0.1:8000/api/generate-lyrics-from-prompt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: cleanPrompt,
+              genre_id: 'bollywood',
+              voice_avatar_name: voiceProfile.name
+            }),
+          });
+          if (lyricRes.ok) {
+            const lData = await lyricRes.json();
+            songLyrics = lData.lyrics;
+            genreToUse = lData.genre || 'bollywood';
+            scaleToUse = lData.recommended_scale || 'Em';
+            if (lData.title) songTitle = lData.title;
+          }
+        } catch (err) {
+          console.warn("Using fallback lyrics generator:", err);
+        }
+
+        if (!songLyrics) {
+          songLyrics = `[Verse 1]\nTere bina ye shaam dhal na saki\nHawa bhi chupke se keh ke gayi\n\n[Chorus]\nTu hi meri dhoon tu hi fasaana\nDil ne seekha tujhse muskurana\n\n[Outro]\nAb na juda ho ye aashiyana`;
+        }
       }
       setLyrics(songLyrics);
 
-      // 2. Synthesize Song
-      setGeneratingStep(`Synthesizing master vocals in ${voiceProfile.name} timbre...`);
+      // 2. Synthesize Song with Selected Voice Avatar
+      setGeneratingStep(`Synthesizing singing vocals with ${voiceProfile.name}...`);
       const songRes = await fetch('http://127.0.0.1:8000/api/generate-song', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lyrics: songLyrics,
           prompt: cleanPrompt,
-          genre_id: 'bollywood',
-          musical_scale: 'Em',
+          genre_id: genreToUse,
+          musical_scale: scaleToUse,
+          voice_avatar_name: voiceProfile.name,
           voice_profile_id: voiceProfile.id,
           voice_gender: voiceProfile.voiceGender || 'male',
           vocal_tuning: 50,
@@ -210,7 +276,7 @@ export default function App() {
       const songData = await songRes.json();
       const finalSong = {
         ...songData,
-        title: cleanPrompt.slice(0, 36),
+        title: songTitle,
         voice_name: voiceProfile.name,
       };
 
@@ -360,6 +426,59 @@ export default function App() {
                         >
                           <strong>Sonara-Pro (DiffRhythm2)</strong>
                           <span>High-fidelity neural singing foundation model</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Voice Avatar Selector Pill (1-Click Avatar Selection) */}
+                  <div className="capsule-avatar-wrapper" ref={avatarDropdownRef}>
+                    <button 
+                      type="button"
+                      className="capsule-avatar-pill"
+                      onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
+                      title={`Singing Avatar: ${voiceProfile.name}`}
+                    >
+                      <span className="avatar-pill-dot" />
+                      <span className="avatar-pill-name">{voiceProfile.name.split(' ')[0]}</span>
+                      <ChevronDown size={13} />
+                    </button>
+
+                    {isAvatarDropdownOpen && (
+                      <div className="avatar-menu-dropdown animate-fadeIn">
+                        <div className="avatar-dropdown-header">
+                          <span>Select Singer Voice Avatar</span>
+                        </div>
+                        {SAMPLE_VOICE_PROFILES.map((profile) => (
+                          <div 
+                            key={profile.id}
+                            className={`avatar-menu-item ${voiceProfile.id === profile.id ? 'active' : ''}`}
+                            onClick={() => {
+                              setVoiceProfile(profile);
+                              setIsAvatarDropdownOpen(false);
+                              setUploadNotice(`Singing Avatar: ${profile.name}`);
+                              setTimeout(() => setUploadNotice(''), 3000);
+                            }}
+                          >
+                            <span className="avatar-item-emoji">{profile.emoji || '🎙️'}</span>
+                            <div className="avatar-item-info">
+                              <strong>{profile.name}</strong>
+                              <span>{profile.role || profile.desc}</span>
+                            </div>
+                            {voiceProfile.id === profile.id && (
+                              <Check size={16} className="text-red-primary" />
+                            )}
+                          </div>
+                        ))}
+                        <div 
+                          className="avatar-menu-calibrate-item"
+                          onClick={() => {
+                            setIsAvatarDropdownOpen(false);
+                            setIsAvatarModalOpen(true);
+                          }}
+                        >
+                          <Mic size={14} className="text-red-primary" />
+                          <span>+ Record / Calibrate My Voice (5s)</span>
                         </div>
                       </div>
                     )}

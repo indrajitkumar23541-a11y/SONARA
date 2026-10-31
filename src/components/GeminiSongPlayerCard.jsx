@@ -50,6 +50,20 @@ export default function GeminiSongPlayerCard({
       setDuration(dur);
       const masterUrl = songData.master_url || songData.vocal_url || '/audio/master_bollywood_1793270569516.mp3';
       sonaraAudio.setRealAudioUrls(songData.vocal_url, songData.music_url, masterUrl, dur);
+
+      // Instant online auto-play when song generation completes!
+      const timer = setTimeout(() => {
+        sonaraAudio.startStemPlayback(vocalVolume, musicVolume, (curr, total) => {
+          setCurrentTime(curr);
+          if (curr >= total) setIsPlaying(false);
+        });
+        setIsPlaying(true);
+      }, 350);
+
+      return () => {
+        clearTimeout(timer);
+        sonaraAudio.stopStemPlayback();
+      };
     }
     return () => {
       sonaraAudio.stopStemPlayback();

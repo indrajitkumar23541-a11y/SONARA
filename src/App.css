@@ -728,6 +728,139 @@ body {
   color: var(--text-muted);
 }
 
+/* Voice Avatar Selector Wrapper & Pill (Matches Gemini-Style Instant Voice Switcher) */
+.capsule-avatar-wrapper {
+  position: relative;
+}
+
+.capsule-avatar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.capsule-avatar-pill:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+.avatar-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red-primary);
+  box-shadow: 0 0 6px var(--red-primary);
+}
+
+.avatar-pill-name {
+  max-width: 95px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar-menu-dropdown {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: 290px;
+  background: #120609;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 18px;
+  padding: 0.55rem;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85);
+  z-index: 105;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.avatar-dropdown-header {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 0.2rem;
+}
+
+.avatar-menu-item {
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  transition: all 0.18s ease;
+}
+
+.avatar-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.avatar-menu-item.active {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.avatar-item-emoji {
+  font-size: 1.15rem;
+}
+
+.avatar-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.avatar-item-info strong {
+  font-size: 0.84rem;
+  color: #ffffff;
+}
+
+.avatar-item-info span {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.avatar-menu-calibrate-item {
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #fca5a5;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin-top: 0.2rem;
+  transition: all 0.18s ease;
+}
+
+.avatar-menu-calibrate-item:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ffffff;
+}
+
 /* Microphone Button */
 .capsule-mic-btn {
   width: 36px;
