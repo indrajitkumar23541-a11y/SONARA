@@ -250,9 +250,13 @@ export default function App() {
 
       // 2. Synthesize Song with Selected Voice Avatar
       setGeneratingStep(`Synthesizing singing vocals with ${voiceProfile.name}...`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
       const songRes = await fetch('http://127.0.0.1:8000/api/generate-song', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           lyrics: songLyrics,
           prompt: cleanPrompt,
@@ -261,6 +265,7 @@ export default function App() {
           voice_avatar_name: voiceProfile.name,
           voice_profile_id: voiceProfile.id,
           voice_gender: voiceProfile.voiceGender || 'male',
+          cloud_provider: selectedModel,
           vocal_tuning: 50,
           vocal_reverb: 40,
           enable_harmonies: true,
@@ -268,6 +273,7 @@ export default function App() {
           enable_mastering: true
         }),
       });
+      clearTimeout(timeoutId);
 
       if (!songRes.ok) {
         throw new Error(`Server returned status ${songRes.status}`);
@@ -557,6 +563,16 @@ export default function App() {
               </div>
               <h2 className="generating-headline">Composing & Synthesizing Master Audio</h2>
               <p className="generating-subtext">{generatingStep || 'Processing musical notes and vocal harmonics...'}</p>
+              <button 
+                type="button"
+                className="generating-cancel-btn"
+                onClick={() => {
+                  setIsGenerating(false);
+                  setGeneratingStep('');
+                }}
+              >
+                Cancel / Return
+              </button>
             </div>
           ) : (
             /* --- Song Generated State: Studio Player Card View --- */

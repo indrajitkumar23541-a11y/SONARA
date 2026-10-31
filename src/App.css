@@ -1023,6 +1023,25 @@ body {
   color: var(--text-muted);
 }
 
+.generating-cancel-btn {
+  margin-top: 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  padding: 0.45rem 1.15rem;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.generating-cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: var(--border-red);
+  color: #ffffff;
+}
+
 .gemini-thread-container {
   max-width: 860px;
   width: 100%;

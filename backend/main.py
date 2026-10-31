@@ -5,6 +5,7 @@ import socket
 import random
 import shutil
 import subprocess
+import asyncio
 from pathlib import Path
 
 # Force IPv4 DNS resolution on Windows to avoid IPv6 route drops (WinError 64)
@@ -422,89 +423,85 @@ async def generate_song(req: SongGenerationRequest):
     studio_vocal_path = PUBLIC_AUDIO_DIR / f"vocal_{req.genre_id}_{timestamp}.mp3"
     master_song_path = PUBLIC_AUDIO_DIR / f"master_{req.genre_id}_{timestamp}.mp3"
 
-    # --- PRIMARY ENGINE: DiffRhythm2 End-to-End Neural Singing & Music Generator ---
-    try:
-        from gradio_client import Client
-        formatted_lrc = "[start]\n[intro]\n[verse]\n" + "\n".join(cleaned_lines[:4])
-        if len(cleaned_lines) > 4:
-            formatted_lrc += "\n[chorus]\n" + "\n".join(cleaned_lines[4:8])
-        formatted_lrc += "\n[outro]"
+    # --- PRIMARY ENGINE: DiffRhythm2 Neural Foundation (Used when Sonara-Pro is selected) ---
+    use_diffrhythm = req.cloud_provider == "Sonara-Pro"
+    if use_diffrhythm:
+        try:
+            from gradio_client import Client
+            formatted_lrc = "[start]\n[intro]\n[verse]\n" + "\n".join(cleaned_lines[:4])
+            if len(cleaned_lines) > 4:
+                formatted_lrc += "\n[chorus]\n" + "\n".join(cleaned_lines[4:8])
+            formatted_lrc += "\n[outro]"
 
-        gender_str = "female" if req.voice_gender == "female" else "male"
-        style_prompt = (
-            f"Indian acoustic romantic, emotional {gender_str} singing voice, "
-            f"acoustic guitar, soft piano, strings, bansuri flute, 85 bpm"
-        )
-
-        audio_prompt_arg = str(user_avatar_path) if has_custom_avatar_file else None
-        print(f"[{time.strftime('%X')}] 🎵 Calling DiffRhythm2 Neural Music Engine (Custom Avatar: {has_custom_avatar_file})...")
-        import concurrent.futures
-
-        def _call_diffrhythm():
-            hf_client = Client("ASLP-lab/DiffRhythm2")
-            return hf_client.predict(
-                lrc=formatted_lrc,
-                audio_prompt=audio_prompt_arg,
-                text_prompt=style_prompt,
-                seed=random.randint(1, 99999),
-                randomize_seed=True,
-                steps=16,
-                cfg_strength=1.3,
-                file_type="mp3",
-                odeint_method="euler",
-                api_name="/infer_music"
+            gender_str = "female" if req.voice_gender == "female" else "male"
+            style_prompt = (
+                f"Indian acoustic romantic, emotional {gender_str} singing voice, "
+                f"acoustic guitar, soft piano, strings, bansuri flute, 85 bpm"
             )
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_call_diffrhythm)
-            gen_path = future.result(timeout=18)
+            audio_prompt_arg = str(user_avatar_path) if has_custom_avatar_file else None
+            print(f"[{time.strftime('%X')}] 🎵 Calling DiffRhythm2 Neural Music Engine (Custom Avatar: {has_custom_avatar_file})...")
 
-        if gen_path and os.path.exists(gen_path):
-            shutil.copyfile(gen_path, str(master_song_path))
-            shutil.copyfile(gen_path, str(studio_vocal_path))
-            print(f"[{time.strftime('%X')}] ✓ DiffRhythm2 successfully generated full singing song!")
-            duration = get_audio_duration(master_song_path)
-            
-            # Build timed lines
-            line_duration = duration / max(1, len(cleaned_lines))
-            timed_lines = [
-                {
-                    "text": line,
-                    "start_time": round(i * line_duration, 1),
-                    "end_time": round((i + 1) * line_duration, 1)
+            def _call_diffrhythm():
+                hf_client = Client("ASLP-lab/DiffRhythm2")
+                return hf_client.predict(
+                    lrc=formatted_lrc,
+                    audio_prompt=audio_prompt_arg,
+                    text_prompt=style_prompt,
+                    seed=random.randint(1, 99999),
+                    randomize_seed=True,
+                    steps=16,
+                    cfg_strength=1.3,
+                    file_type="mp3",
+                    odeint_method="euler",
+                    api_name="/infer_music"
+                )
+
+            gen_path = await asyncio.wait_for(
+                asyncio.to_thread(_call_diffrhythm),
+                timeout=12.0
+            )
+
+            if gen_path and os.path.exists(gen_path):
+                shutil.copyfile(gen_path, str(master_song_path))
+                shutil.copyfile(gen_path, str(studio_vocal_path))
+                print(f"[{time.strftime('%X')}] ✓ DiffRhythm2 successfully generated full singing song!")
+                duration = get_audio_duration(master_song_path)
+                
+                line_duration = duration / max(1, len(cleaned_lines))
+                timed_lines = [
+                    {
+                        "text": line,
+                        "start_time": round(i * line_duration, 1),
+                        "end_time": round((i + 1) * line_duration, 1)
+                    }
+                    for i, line in enumerate(cleaned_lines)
+                ]
+                return {
+                    "status": "success",
+                    "engine": "DiffRhythm2 Neural Music Foundation Engine",
+                    "genre": req.genre_id,
+                    "musical_scale": req.musical_scale,
+                    "master_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
+                    "vocal_url": f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}",
+                    "music_url": f"http://127.0.0.1:8000/audio/backing_{req.genre_id}.mp3",
+                    "duration": duration,
+                    "lines": timed_lines,
+                    "message": "Full-Length Neural Bollywood Song Synthesized with Real Singing Melody!"
                 }
-                for i, line in enumerate(cleaned_lines)
-            ]
-            return {
-                "status": "success",
-                "engine": "DiffRhythm2 Neural Music Foundation Engine",
-                "genre": req.genre_id,
-                "musical_scale": req.musical_scale,
-                "master_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
-                "vocal_url": f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}",
-                "music_url": f"http://127.0.0.1:8000/audio/backing_{req.genre_id}.mp3",
-                "duration": duration,
-                "lines": timed_lines,
-                "message": "Full-Length Neural Bollywood Song Synthesized with Real Singing Melody!"
-            }
-    except Exception as e:
-        print(f"DiffRhythm2 engine note (falling back to studio acoustic pipeline): {e}")
+        except Exception as e:
+            print(f"DiffRhythm2 engine note (falling back to studio acoustic pipeline): {e}")
 
-    # --- SECONDARY ENGINE: Professional Bollywood Melodic Vocal & Acoustic Studio Pipeline ---
-    # In authentic Bollywood singing, pitch moves in melodic Raag swaras (Sa -> Ga -> Pa -> Komal Ni -> Sa)
-    # and pacing is drawn out (-38% rate) with vocal breath pauses
+    # --- SECONDARY ENGINE: Ultra-Fast Melodic Vocal & Acoustic Studio Pipeline (~3 seconds) ---
+    # High-Speed Parallel Vocal Synthesis (Parallel edge_tts coroutines: ~1.5s total)
     raag_pitch_offsets = [12, 28, 42, 16, 24, 38, 14, 8]
 
-    temp_line_files = []
-    for idx, line in enumerate(cleaned_lines):
-        # Calculate melodic Raag pitch shift for singing cadence
+    async def _synth_single_line(idx, line_text):
         semitone_offset = raag_pitch_offsets[idx % len(raag_pitch_offsets)]
         line_pitch = f"+{semitone_offset}Hz"
-        line_rate = "-38%" # Slow, soulful singing meter
+        line_rate = "-32%"
         line_audio = PUBLIC_AUDIO_DIR / f"tmp_line_{timestamp}_{idx}.mp3"
-        
-        # Add sustained breathing space between lyrical phrases
-        text_for_synth = line.rstrip(".") + " ... "
+        text_for_synth = line_text.rstrip(".") + " ... "
         comm = edge_tts.Communicate(
             text=text_for_synth,
             voice=voice_name,
@@ -512,7 +509,12 @@ async def generate_song(req: SongGenerationRequest):
             pitch=line_pitch
         )
         await comm.save(str(line_audio))
-        temp_line_files.append(line_audio)
+        return (idx, line_audio)
+
+    line_tasks = [_synth_single_line(i, l) for i, l in enumerate(cleaned_lines)]
+    line_results = await asyncio.gather(*line_tasks)
+    line_results.sort(key=lambda x: x[0])
+    temp_line_files = [res[1] for res in line_results]
 
     # Concat line tracks into continuous vocal
     concat_manifest = PUBLIC_AUDIO_DIR / f"concat_{timestamp}.txt"
