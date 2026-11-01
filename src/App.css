@@ -3175,8 +3175,9 @@ html, body {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    border: none !important;
+    outline: none;
     color: #fff;
     cursor: pointer;
     transition: all 0.18s ease;
@@ -3184,8 +3185,8 @@ html, body {
 
   .mobile-hamburger-btn:hover,
   .mobile-hamburger-btn:active {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    border: none !important;
   }
 
   .mobile-brand-title-wrap {
