@@ -4,6 +4,7 @@ import GeminiTopNav from './components/GeminiTopNav';
 import VoiceAvatarModal from './components/VoiceAvatarModal';
 import HistoryDrawer from './components/HistoryDrawer';
 import ApiSettingsModal from './components/ApiSettingsModal';
+import GeminiSearchModal from './components/GeminiSearchModal';
 import GeminiSongPlayerCard from './components/GeminiSongPlayerCard';
 import GeminiToolsMenu from './components/GeminiToolsMenu';
 import { sonaraAudio } from './utils/audioEngine';
@@ -62,6 +63,7 @@ export default function App() {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Song Generation & Chat State
   const [voiceProfile, setVoiceProfile] = useState(SAMPLE_VOICE_PROFILES[0]);
@@ -69,7 +71,29 @@ export default function App() {
   const [generatingStep, setGeneratingStep] = useState('');
   const [generatedSong, setGeneratedSong] = useState(null);
   const [lyrics, setLyrics] = useState('');
-  const [historySongs, setHistorySongs] = useState([DEFAULT_INITIAL_SONG]);
+  const [historySongs, setHistorySongs] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sonara_history_songs');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("Failed to load history songs:", e);
+    }
+    return [{
+      ...DEFAULT_INITIAL_SONG,
+      id: 'default_initial_song_1',
+      timestamp: Date.now() - 3600 * 1000 * 48 // 2 days ago
+    }];
+  });
+
+  // Persist history songs
+  useEffect(() => {
+    try {
+      localStorage.setItem('sonara_history_songs', JSON.stringify(historySongs));
+    } catch (e) {}
+  }, [historySongs]);
 
   const textareaRef = useRef(null);
 
@@ -284,10 +308,26 @@ export default function App() {
         ...songData,
         title: songTitle,
         voice_name: voiceProfile.name,
+        timestamp: Date.now(),
       };
 
       setGeneratedSong(finalSong);
       setHistorySongs((prev) => [finalSong, ...prev]);
+
+      // Save into real search history
+      try {
+        const rawHistory = localStorage.getItem('sonara_search_history');
+        const prevList = rawHistory ? JSON.parse(rawHistory) : [];
+        const newItem = {
+          id: `hist_${Date.now()}`,
+          type: 'song',
+          title: songTitle || cleanPrompt,
+          timestamp: Date.now(),
+          songData: finalSong
+        };
+        const updated = [newItem, ...prevList.filter(h => h.title !== newItem.title)].slice(0, 30);
+        localStorage.setItem('sonara_search_history', JSON.stringify(updated));
+      } catch (e) {}
 
     } catch (err) {
       console.warn("Synthesis fallback:", err);
@@ -296,10 +336,25 @@ export default function App() {
         ...DEFAULT_INITIAL_SONG,
         title: cleanPrompt.slice(0, 36) || 'Original AI Bollywood Track',
         voice_name: voiceProfile.name,
+        timestamp: Date.now(),
       };
       setGeneratedSong(fallback);
       setLyrics(DEFAULT_INITIAL_SONG.lines.map(l => l.text).join('\n'));
       setHistorySongs((prev) => [fallback, ...prev]);
+
+      try {
+        const rawHistory = localStorage.getItem('sonara_search_history');
+        const prevList = rawHistory ? JSON.parse(rawHistory) : [];
+        const newItem = {
+          id: `hist_${Date.now()}`,
+          type: 'song',
+          title: fallback.title,
+          timestamp: Date.now(),
+          songData: fallback
+        };
+        const updated = [newItem, ...prevList.filter(h => h.title !== newItem.title)].slice(0, 30);
+        localStorage.setItem('sonara_search_history', JSON.stringify(updated));
+      } catch (e) {}
     } finally {
       setIsGenerating(false);
       setGeneratingStep('');
@@ -322,9 +377,10 @@ export default function App() {
       {/* 1. Left Slim Vertical Sidebar (Matches screenshot with red glow) */}
       <GeminiSidebar 
         onNewChat={handleResetToNewChat}
+        onOpenSearch={() => setIsSearchOpen(true)}
         onOpenLibrary={() => setIsHistoryDrawerOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        activeView={isHistoryDrawerOpen ? 'library' : 'chat'}
+        activeView={isSearchOpen ? 'search' : (isHistoryDrawerOpen ? 'library' : 'chat')}
       />
 
       {/* 2. Main Workstation Area */}
@@ -571,6 +627,23 @@ export default function App() {
       <ApiSettingsModal 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* 6. Gemini-Style Search Palette (Matches Screenshot with Sonara Red & Black Theme) */}
+      <GeminiSearchModal 
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        historySongs={historySongs}
+        onSelectSong={(song) => {
+          setGeneratedSong(song);
+          setLyrics(song.lines ? song.lines.map(l => l.text).join('\n') : '');
+          setIsSearchOpen(false);
+        }}
+        onSelectPrompt={(promptText) => {
+          setPromptInput(promptText);
+          if (textareaRef.current) textareaRef.current.focus();
+          setIsSearchOpen(false);
+        }}
       />
     </div>
   );

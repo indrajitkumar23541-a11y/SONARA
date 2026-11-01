@@ -9,6 +9,7 @@ import {
 
 export default function GeminiSidebar({ 
   onNewChat, 
+  onOpenSearch,
   onOpenLibrary, 
   onOpenSettings,
   activeView
@@ -42,18 +43,18 @@ export default function GeminiSidebar({
         <div className="sidebar-nav-group">
           {/* 1. New Song / Chat */}
           <button 
-            className="sidebar-icon-btn" 
+            className={`sidebar-icon-btn ${activeView === 'chat' ? 'active' : ''}`}
             onClick={onNewChat}
             title="New Song / Chat"
           >
             <SquarePen size={20} />
           </button>
 
-          {/* 2. Explore & Search */}
+          {/* 2. Explore & Search (Matches Screenshot Palette) */}
           <button 
             className={`sidebar-icon-btn ${activeView === 'search' ? 'active' : ''}`}
-            onClick={onNewChat}
-            title="Search"
+            onClick={onOpenSearch}
+            title="Search chats & songs"
           >
             <Search size={20} />
           </button>

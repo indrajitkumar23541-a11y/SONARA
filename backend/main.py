@@ -88,13 +88,21 @@ def detect_language(text: str) -> str:
 
 def clean_lyrics_into_stanzas(lyrics_raw: str) -> List[str]:
     lines = []
+    current_speaker = ""
     for line in lyrics_raw.splitlines():
         line = line.strip()
         if not line:
             continue
-        if re.match(r"^\[.*?\]$", line):
+        m_speaker = re.match(r"^\[(male|female|both|duet|ladka|ladki|f|m)\]$", line, re.I)
+        if m_speaker:
+            current_speaker = f"[{m_speaker.group(1).title()}] "
             continue
-        lines.append(line)
+        if re.match(r"^\[(verse|chorus|hook|bridge|intro|outro|stuti|antara|mukhda).*?\]$", line, re.I):
+            continue
+        if current_speaker and not re.match(r"^\[(male|female|both|duet|ladka|ladki|f|m)\]", line, re.I):
+            lines.append(f"{current_speaker}{line}")
+        else:
+            lines.append(line)
     return lines
 
 
@@ -216,12 +224,40 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
     is_birthday = any(k in prompt_lower for k in ["birthday", "janamdin", "mubarak", "badhai"])
     is_lori = any(k in prompt_lower for k in ["lori", "chanda", "soja", "bachha", "nindiya", "raat"])
     is_love = any(k in prompt_lower for k in ["love", "pyar", "ishq", "mohabbat", "romantic", "romance", "sanam", "dil"])
+    is_duet = any(k in prompt_lower for k in ["duet", "duwet", "couple", "two singers", "male and female", "ladka ladki"])
 
     # Extract clean topic title
     first_phrase = prompt_raw.split(".")[0].split(",")[0]
     title = first_phrase[:35].strip().title()
 
-    if is_rain:
+    if is_duet:
+        lyrics = (
+            "[Intro - Flute & Acoustic Strings]\n"
+            "[Male] Teri aankhon ki gehraiyon me kho gaya hoon\n"
+            "[Male] Tujhe dekh kar main khud se juda ho gaya hoon\n"
+            "[Female] Meri saanson me bas teri hi khushboo ghuli hai\n"
+            "[Female] Tere aane se dil ki har ek kali khili hai\n\n"
+            "[Chorus]\n"
+            "[Both] Tum mile toh mil gaya sara jahan\n"
+            "[Both] Tere bina ab jeena namumkin yahan\n"
+            "[Both] Dhadkanein ye keh rahi hain ek saath\n"
+            "[Both] Zindagi bhar ka chahiye tera hi haath\n\n"
+            "[Verse 2]\n"
+            "[Male] Chaand taaron se chura ke laoon ye roshni\n"
+            "[Male] Tere kadmon me saja doon apni har aashiqui\n"
+            "[Female] Sang tere chalna hai har ek mod par\n"
+            "[Female] Chhodungi na ye daaman chahe ruthe ye shehar\n\n"
+            "[Chorus]\n"
+            "[Both] Tum mile toh mil gaya sara jahan\n"
+            "[Both] Tere bina ab jeena namumkin yahan\n\n"
+            "[Outro]\n"
+            "[Male] Humsafar mere tu hi meri manzil\n"
+            "[Female] Tujhme hi toh basti hai meri ye mehfil\n"
+            "[Both] Ab har janam me chahiye tera hi sath"
+        )
+        mood_detected = "Soulful Bollywood Duet"
+        scale = "E Minor"
+    elif is_rain:
         lyrics = (
             "[Verse 1]\n"
             "Barish ki bheege boondein geet sunaayein\n"
@@ -501,10 +537,51 @@ async def generate_song(req: SongGenerationRequest):
         line_pitch = f"+{semitone_offset}Hz"
         line_rate = "-32%"
         line_audio = PUBLIC_AUDIO_DIR / f"tmp_line_{timestamp}_{idx}.mp3"
-        text_for_synth = line_text.rstrip(".") + " ... "
+
+        lower_line = line_text.lower()
+        is_both = any(lower_line.startswith(p) for p in ["[both]", "(both)", "[duet]", "(duet)", "both:", "duet:"])
+        is_female = any(lower_line.startswith(p) for p in ["[female]", "(female)", "[f]", "(f)", "female:", "ladki:", "[ladki]"])
+        is_male = any(lower_line.startswith(p) for p in ["[male]", "(male)", "[m]", "(m)", "male:", "ladka:", "[ladka]"])
+
+        if is_both:
+            cleaned_text = re.sub(r"^(\[both\]|\(both\)|\[duet\]|\(duet\)|both:|duet:)\s*", "", line_text, flags=re.IGNORECASE)
+            text_for_synth = cleaned_text.rstrip(".") + " ... "
+            male_v = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
+            female_v = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
+            f_m = PUBLIC_AUDIO_DIR / f"tmp_m_{timestamp}_{idx}.mp3"
+            f_f = PUBLIC_AUDIO_DIR / f"tmp_f_{timestamp}_{idx}.mp3"
+            c_m = edge_tts.Communicate(text=text_for_synth, voice=male_v, rate=line_rate, pitch=line_pitch)
+            c_f = edge_tts.Communicate(text=text_for_synth, voice=female_v, rate=line_rate, pitch=line_pitch)
+            await asyncio.gather(c_m.save(str(f_m)), c_f.save(str(f_f)))
+            try:
+                cmd_mix = [
+                    FFMPEG_EXE, "-y",
+                    "-i", str(f_m), "-i", str(f_f),
+                    "-filter_complex", "amix=inputs=2:duration=longest:weights=1 1",
+                    str(line_audio)
+                ]
+                subprocess.run(cmd_mix, check=True)
+            except Exception:
+                shutil.copyfile(str(f_m), str(line_audio))
+            for f_tmp in [f_m, f_f]:
+                try:
+                    if f_tmp.exists(): f_tmp.unlink()
+                except Exception: pass
+            return (idx, line_audio)
+
+        line_voice = voice_name
+        cleaned_text = line_text
+        if is_female:
+            line_voice = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
+            cleaned_text = re.sub(r"^(\[female\]|\(female\)|\[f\]|\(f\)|female:|ladki:|\[ladki\])\s*", "", line_text, flags=re.IGNORECASE)
+        elif is_male:
+            line_voice = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
+            cleaned_text = re.sub(r"^(\[male\]|\(male\)|\[m\]|\(m\)|male:|ladka:|\[ladka\])\s*", "", line_text, flags=re.IGNORECASE)
+
+        text_for_synth = cleaned_text.rstrip(".") + " ... "
         comm = edge_tts.Communicate(
             text=text_for_synth,
-            voice=voice_name,
+            voice=line_voice,
             rate=line_rate,
             pitch=line_pitch
         )
