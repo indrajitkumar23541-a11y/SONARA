@@ -234,7 +234,8 @@ export default function App() {
       let songLyrics = '';
       let genreToUse = 'bollywood';
       let scaleToUse = 'Em';
-      let songTitle = cleanPrompt.split('\n')[0].replace(/\[.*?\]/g, '').trim().slice(0, 36) || 'My AI Song';
+      const firstLyricLine = rawLines.find(l => !/^[-—_\[(]*(female|male|both|duet|ladka|ladki|verse|chorus|intro|outro)/i.test(l)) || rawLines[0] || 'My AI Song';
+      let songTitle = firstLyricLine.replace(/[-—_\[\]()]/g, '').trim().slice(0, 36) || 'My AI Song';
 
       if (isDirectLyrics) {
         // User provided direct lyrics! Keep them intact

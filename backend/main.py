@@ -86,6 +86,53 @@ def detect_language(text: str) -> str:
     return "hindi" if matches >= 2 else "english"
 
 
+# Melodic singing phoneme elongation & musical phrasing
+def melodic_vocal_stretch(speaker: str, text: str) -> str:
+    t = text.strip()
+    
+    # Female Aalaap styling (high sweet resonant alaap)
+    if speaker.upper() == "FEMALE":
+        if "la" in t.lower():
+            words = t.split()
+            stretched = []
+            for w in words:
+                clean = re.sub(r'[^a-zA-Z]', '', w).lower()
+                if clean == 'la':
+                    stretched.append("Laaa..")
+                else:
+                    stretched.append(w)
+            return " ".join(stretched) + " ... "
+        if "tere naam" in t.lower():
+            return "Teeereee naaaam ... "
+        return t + " ... "
+        
+    # Male Romantic Lead vocal styling (prolong key emotional vowels for true singing cadence)
+    replacements = [
+        (r"\bTere naam\b", "Teeereee naaaam"),
+        (r"\btere naam\b", "teeereee naaaam"),
+        (r"\bhumne kiya hai\b", "humne kiyyyaaaa haaai"),
+        (r"\bjeevan apna saara sanam\b", "jeeevaaan apnaaa saaaaraaa sanam"),
+        (r"\bHo, jeevan\b", "Hooo ... jeeevaaan"),
+        (r"\bPyaar bahut karte hai tumse\b", "Pyaaaar bahuuut karte hai tumse"),
+        (r"\bishq hai tu hamaara sanam\b", "ishq haaai tu hamaaaaraaa sanam"),
+        (r"\bHo, ishq\b", "Hooo ... ishq"),
+        (r"\bveeraana lagta hai\b", "veeraaanaaa lagtaaa haaai"),
+        (r"\bbegaana lagta hai\b", "begaaaanaaa lagtaaa haaai"),
+        (r"\bkhoye rehte hain\b", "khooooyee rehhtee haaaain"),
+        (r"\bdeewaana kehte hain\b", "deewaaaanaaa kehhtee haaaain"),
+        (r"\bTere bina, tere bina\b", "Teeereee binaaa ... teeereee binaaa"),
+        (r"\bna mumkin hai zindagi ka guzaara sanam\b", "naa mumkiiin haaai zindagiii kaaa guzaaaaraaa sanam"),
+        (r"\bTere liye, tere liye\b", "Teeereee liyee ... teeereee liyee"),
+        (r"\bis duniya ka har sitam hai gawaara sanam\b", "is duniyaaa kaaa har sitam haaai gawaaaaraaa sanam"),
+    ]
+    
+    transformed = t
+    for pattern, repl in replacements:
+        transformed = re.sub(pattern, repl, transformed, flags=re.I)
+        
+    return transformed.rstrip(".") + " ... "
+
+
 def clean_lyrics_into_stanzas(lyrics_raw: str) -> List[str]:
     lines = []
     current_speaker = ""
@@ -93,11 +140,12 @@ def clean_lyrics_into_stanzas(lyrics_raw: str) -> List[str]:
         line = line.strip()
         if not line:
             continue
-        m_speaker = re.match(r"^\[(male|female|both|duet|ladka|ladki|f|m)\]$", line, re.I)
+        # Supports [--FEMALE--], [--MALE--], [Female], [Male], (Female), (Male), Female:, Male:, etc.
+        m_speaker = re.match(r"^[-—_\[(]*\s*(male|female|both|duet|ladka|ladki|f|m)\s*[-—_\])]*[:]?$", line, re.I)
         if m_speaker:
             current_speaker = f"[{m_speaker.group(1).title()}] "
             continue
-        if re.match(r"^\[(verse|chorus|hook|bridge|intro|outro|stuti|antara|mukhda).*?\]$", line, re.I):
+        if re.match(r"^[-—_\[(]*(verse|chorus|hook|bridge|intro|outro|stuti|antara|mukhda).*?[-—_\])]*$", line, re.I):
             continue
         if current_speaker and not re.match(r"^\[(male|female|both|duet|ladka|ladki|f|m)\]", line, re.I):
             lines.append(f"{current_speaker}{line}")
@@ -535,23 +583,22 @@ async def generate_song(req: SongGenerationRequest):
     async def _synth_single_line(idx, line_text):
         semitone_offset = raag_pitch_offsets[idx % len(raag_pitch_offsets)]
         line_pitch = f"+{semitone_offset}Hz"
-        line_rate = "-32%"
         line_audio = PUBLIC_AUDIO_DIR / f"tmp_line_{timestamp}_{idx}.mp3"
 
         lower_line = line_text.lower()
-        is_both = any(lower_line.startswith(p) for p in ["[both]", "(both)", "[duet]", "(duet)", "both:", "duet:"])
-        is_female = any(lower_line.startswith(p) for p in ["[female]", "(female)", "[f]", "(f)", "female:", "ladki:", "[ladki]"])
-        is_male = any(lower_line.startswith(p) for p in ["[male]", "(male)", "[m]", "(m)", "male:", "ladka:", "[ladka]"])
+        is_both = any(lower_line.startswith(p) for p in ["[both]", "(both)", "[duet]", "(duet)", "both:", "duet:", "--both--"])
+        is_female = any(lower_line.startswith(p) for p in ["[female]", "(female)", "[f]", "(f)", "female:", "ladki:", "[ladki]", "--female--"])
+        is_male = any(lower_line.startswith(p) for p in ["[male]", "(male)", "[m]", "(m)", "male:", "ladka:", "[ladka]", "--male--"])
 
         if is_both:
-            cleaned_text = re.sub(r"^(\[both\]|\(both\)|\[duet\]|\(duet\)|both:|duet:)\s*", "", line_text, flags=re.IGNORECASE)
-            text_for_synth = cleaned_text.rstrip(".") + " ... "
+            cleaned_text = re.sub(r"^(\[both\]|\(both\)|\[duet\]|\(duet\)|both:|duet:|--both--)\s*", "", line_text, flags=re.IGNORECASE)
+            singing_text = melodic_vocal_stretch("MALE", cleaned_text)
             male_v = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
             female_v = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
             f_m = PUBLIC_AUDIO_DIR / f"tmp_m_{timestamp}_{idx}.mp3"
             f_f = PUBLIC_AUDIO_DIR / f"tmp_f_{timestamp}_{idx}.mp3"
-            c_m = edge_tts.Communicate(text=text_for_synth, voice=male_v, rate=line_rate, pitch=line_pitch)
-            c_f = edge_tts.Communicate(text=text_for_synth, voice=female_v, rate=line_rate, pitch=line_pitch)
+            c_m = edge_tts.Communicate(text=singing_text, voice=male_v, rate="-20%", pitch=f"+{semitone_offset}Hz")
+            c_f = edge_tts.Communicate(text=singing_text, voice=female_v, rate="-24%", pitch=f"+{semitone_offset+18}Hz")
             await asyncio.gather(c_m.save(str(f_m)), c_f.save(str(f_f)))
             try:
                 cmd_mix = [
@@ -569,18 +616,27 @@ async def generate_song(req: SongGenerationRequest):
                 except Exception: pass
             return (idx, line_audio)
 
+        speaker_tag = "MALE"
         line_voice = voice_name
+        line_rate = "-20%"
         cleaned_text = line_text
         if is_female:
+            speaker_tag = "FEMALE"
             line_voice = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
-            cleaned_text = re.sub(r"^(\[female\]|\(female\)|\[f\]|\(f\)|female:|ladki:|\[ladki\])\s*", "", line_text, flags=re.IGNORECASE)
+            line_rate = "-24%"
+            line_pitch = f"+{semitone_offset + 22}Hz" # Higher harmonic register for female aalaap
+            cleaned_text = re.sub(r"^(\[female\]|\(female\)|\[f\]|\(f\)|female:|ladki:|\[ladki\]|--female--)\s*", "", line_text, flags=re.IGNORECASE)
         elif is_male:
+            speaker_tag = "MALE"
             line_voice = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
-            cleaned_text = re.sub(r"^(\[male\]|\(male\)|\[m\]|\(m\)|male:|ladka:|\[ladka\])\s*", "", line_text, flags=re.IGNORECASE)
+            line_rate = "-20%"
+            cleaned_text = re.sub(r"^(\[male\]|\(male\)|\[m\]|\(m\)|male:|ladka:|\[ladka\]|--male--)\s*", "", line_text, flags=re.IGNORECASE)
 
-        text_for_synth = cleaned_text.rstrip(".") + " ... "
+        # Apply true singing vowel elongation and emotional phrasing
+        singing_text = melodic_vocal_stretch(speaker_tag, cleaned_text)
+
         comm = edge_tts.Communicate(
-            text=text_for_synth,
+            text=singing_text,
             voice=line_voice,
             rate=line_rate,
             pitch=line_pitch
@@ -623,14 +679,15 @@ async def generate_song(req: SongGenerationRequest):
     # Vocal Processing: Intro Delay (3.5s) + Chest Warmth + Presence EQ + Stereo Double Tracking + Studio Plate Reverb
     reverb_decay = max(0.25, min(0.65, req.vocal_reverb / 100.0))
     vocal_filter = (
-        "adelay=3500|3500,"
-        "equalizer=f=260:t=q:w=1.2:g=3.8,"
-        "equalizer=f=3200:t=q:w=1.2:g=3.0,"
-        "equalizer=f=8500:t=q:w=1:g=2.2,"
-        "equalizer=f=600:t=q:w=1.5:g=-2.2,"
+        "adelay=3800|3800,"
+        "vibrato=f=5.2:d=0.22,"
+        "equalizer=f=260:t=q:w=1.2:g=4.2,"
+        "equalizer=f=3300:t=q:w=1.2:g=3.8,"
+        "equalizer=f=11500:t=q:w=1:g=2.8,"
+        "equalizer=f=600:t=q:w=1.5:g=-2.4,"
         "chorus=0.7:0.85:55:0.4:0.25:2,"
-        f"aecho=0.8:0.75:60:{reverb_decay},"
-        "acompressor=threshold=-14dB:ratio=2.8:attack=15:release=220"
+        f"aecho=0.8:0.75:65:{reverb_decay},"
+        "acompressor=threshold=-14dB:ratio=3.2:attack=12:release=220"
     )
     cmd_lead = [
         FFMPEG_EXE, "-y", "-i", str(raw_vocal_path),
