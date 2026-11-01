@@ -524,12 +524,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Current Active Avatar Mini-Badge */}
-              <div className="active-avatar-pill-bottom" onClick={() => setIsAvatarModalOpen(true)}>
-                <span>Active Singer Avatar:</span>
-                <strong className="text-red-primary">{voiceProfile.name}</strong>
-                <span className="change-link">Change</span>
-              </div>
+
             </div>
           ) : isGenerating ? (
             /* --- Generating Song Status --- */
