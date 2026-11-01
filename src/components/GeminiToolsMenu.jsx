@@ -190,6 +190,29 @@ export default function GeminiToolsMenu({
           </div>
         )}
       </div>
+    
+      <div className="tools-menu-divider" />
+
+      {/* 4. Calibrate AI Voice Avatar */}
+      {onOpenAvatarModal && (
+        <button 
+          type="button" 
+          className="tools-menu-item"
+          onClick={() => {
+            onOpenAvatarModal();
+            onClose();
+          }}
+          title="Calibrate your 5-second singing avatar"
+        >
+          <div className="menu-item-icon text-red">
+            <Sparkles size={18} />
+          </div>
+          <div className="menu-item-content">
+            <span className="menu-item-title">AI Voice Avatar Studio</span>
+            <span className="menu-item-desc">5-second voice clone & singer profile</span>
+          </div>
+        </button>
+      )}
     </div>
   );
 }
