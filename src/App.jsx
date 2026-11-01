@@ -4,6 +4,7 @@ import GeminiTopNav from './components/GeminiTopNav';
 import VoiceAvatarModal from './components/VoiceAvatarModal';
 import HistoryDrawer from './components/HistoryDrawer';
 import ApiSettingsModal from './components/ApiSettingsModal';
+import GeminiSettingsMenu from './components/GeminiSettingsMenu';
 import GeminiSearchModal from './components/GeminiSearchModal';
 import GeminiSongPlayerCard from './components/GeminiSongPlayerCard';
 import GeminiToolsMenu from './components/GeminiToolsMenu';
@@ -62,7 +63,8 @@ export default function App() {
   // Modals & Drawers
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const [isEngineModalOpen, setIsEngineModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Song Generation & Chat State
@@ -379,8 +381,8 @@ export default function App() {
         onNewChat={handleResetToNewChat}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenLibrary={() => setIsHistoryDrawerOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        activeView={isSearchOpen ? 'search' : (isHistoryDrawerOpen ? 'library' : 'chat')}
+        onOpenSettings={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
+        activeView={isSearchOpen ? 'search' : (isHistoryDrawerOpen ? 'library' : (isSettingsMenuOpen ? 'settings' : 'chat'))}
       />
 
       {/* 2. Main Workstation Area */}
@@ -394,7 +396,7 @@ export default function App() {
             a.download = 'SONARA_Master.mp3';
             a.click();
           }}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSettings={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
         />
 
         {/* Center Content Canvas */}
@@ -623,13 +625,22 @@ export default function App() {
         }}
       />
 
-      {/* 5. Cloud GPU & Engine Settings Modal */}
-      <ApiSettingsModal 
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+      {/* 5. Gemini Settings Anchored Popup Menu (Matches Screenshot) */}
+      <GeminiSettingsMenu 
+        isOpen={isSettingsMenuOpen}
+        onClose={() => setIsSettingsMenuOpen(false)}
+        onOpenEngineSettings={() => setIsEngineModalOpen(true)}
+        onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+        onOpenHistoryDrawer={() => setIsHistoryDrawerOpen(true)}
       />
 
-      {/* 6. Gemini-Style Search Palette (Matches Screenshot with Sonara Red & Black Theme) */}
+      {/* 6. Studio Engine & Cloud GPU Modal */}
+      <ApiSettingsModal 
+        isOpen={isEngineModalOpen}
+        onClose={() => setIsEngineModalOpen(false)}
+      />
+
+      {/* 7. Gemini-Style Search Palette (Matches Screenshot with Sonara Red & Black Theme) */}
       <GeminiSearchModal 
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
