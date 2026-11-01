@@ -8,6 +8,7 @@ import GeminiSettingsMenu from './components/GeminiSettingsMenu';
 import GeminiSearchModal from './components/GeminiSearchModal';
 import GeminiSongPlayerCard from './components/GeminiSongPlayerCard';
 import GeminiToolsMenu from './components/GeminiToolsMenu';
+import MobileDrawer from './components/MobileDrawer';
 import { sonaraAudio } from './utils/audioEngine';
 import { 
   GENRES, 
@@ -66,6 +67,7 @@ export default function App() {
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [isEngineModalOpen, setIsEngineModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Song Generation & Chat State
   const [voiceProfile, setVoiceProfile] = useState(SAMPLE_VOICE_PROFILES[0]);
@@ -389,6 +391,7 @@ export default function App() {
       <div className="gemini-main-canvas">
         {/* Top Right Controls (Matches screenshot) */}
         <GeminiTopNav 
+          onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
           onNewChat={handleResetToNewChat}
           onDownloadApp={() => {
             const a = document.createElement('a');
@@ -404,7 +407,10 @@ export default function App() {
           {!generatedSong && !isGenerating ? (
             /* --- Initial "Where should we start?" State --- */
             <div className="gemini-hero-container">
-              {/* Centered Large Title */}
+              {/* Centered Large Title & Sparkle (Matches Image 1) */}
+              <div className="gemini-hero-sparkle-wrap">
+                <Sparkles size={32} className="text-red-primary hero-sparkle-icon" />
+              </div>
               <h1 className="gemini-hero-title">
                 Where should we start?
               </h1>
@@ -654,6 +660,21 @@ export default function App() {
           setPromptInput(promptText);
           if (textareaRef.current) textareaRef.current.focus();
           setIsSearchOpen(false);
+        }}
+      />
+
+      {/* 8. Mobile Navigation Drawer (Matches Image 2) */}
+      <MobileDrawer 
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+        onNewChat={handleResetToNewChat}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenLibrary={() => setIsHistoryDrawerOpen(true)}
+        onOpenSettings={() => setIsSettingsMenuOpen(true)}
+        historySongs={historySongs}
+        onSelectSong={(song) => {
+          setGeneratedSong(song);
+          setLyrics(song.lines ? song.lines.map(l => l.text).join('\n') : '');
         }}
       />
     </div>

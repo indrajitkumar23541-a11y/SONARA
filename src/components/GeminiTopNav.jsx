@@ -1,17 +1,36 @@
 import React from 'react';
-import { Download, SquarePen, Sparkles } from 'lucide-react';
+import { Download, SquarePen, Sparkles, Menu } from 'lucide-react';
 
-export default function GeminiTopNav({ onNewChat, onDownloadApp, onOpenSettings }) {
+export default function GeminiTopNav({ 
+  onOpenMobileDrawer, 
+  onNewChat, 
+  onDownloadApp, 
+  onOpenSettings 
+}) {
   return (
     <header className="gemini-top-nav">
       <div className="top-nav-left">
-        {/* Subtle mobile brand indicator or spacer */}
+        {/* Mobile Hamburger Button inside Circular Ring (Matches Image 1) */}
+        <button 
+          type="button"
+          className="mobile-hamburger-btn"
+          onClick={onOpenMobileDrawer}
+          title="Open menu"
+        >
+          <Menu size={19} />
+        </button>
+
+        {/* Mobile Brand Logo & Name (Matches Image 1) */}
+        <div className="mobile-brand-title-wrap" onClick={onNewChat}>
+          <Sparkles size={16} className="text-red-primary mobile-brand-sparkle" />
+          <span className="mobile-brand-title">SONARA</span>
+        </div>
       </div>
 
       <div className="top-nav-right">
-        {/* 'Get app' Pill Button */}
+        {/* 'Get app' Pill Button (Desktop only) */}
         <button 
-          className="get-app-pill-btn" 
+          className="get-app-pill-btn desktop-only" 
           onClick={onDownloadApp}
           title="Export SONARA App or Download Master"
         >
@@ -19,7 +38,7 @@ export default function GeminiTopNav({ onNewChat, onDownloadApp, onOpenSettings 
           <span>Get app</span>
         </button>
 
-        {/* New Chat / Song Icon Button */}
+        {/* New Chat / Song Icon Button (Matches Image 1: Pencil / Edit icon) */}
         <button 
           className="top-icon-btn" 
           onClick={onNewChat}
@@ -28,7 +47,7 @@ export default function GeminiTopNav({ onNewChat, onDownloadApp, onOpenSettings 
           <SquarePen size={18} />
         </button>
 
-        {/* User Avatar Circle */}
+        {/* User Avatar Circle (Matches Image 1: Profile picture) */}
         <div 
           className="top-user-avatar" 
           onClick={onOpenSettings}
