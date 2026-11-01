@@ -3,21 +3,12 @@ import {
   Gauge, 
   CreditCard, 
   Sparkles, 
-  Cpu, 
-  Sliders, 
   UserCheck, 
-  Diamond, 
   Palette, 
-  UploadCloud, 
-  Link2, 
-  MessageSquare, 
-  HelpCircle, 
   MapPin, 
-  Clock, 
   ChevronRight, 
   X,
   CheckCircle2,
-  Zap,
   ShieldCheck,
   Check
 } from 'lucide-react';
@@ -25,9 +16,7 @@ import {
 export default function GeminiSettingsMenu({ 
   isOpen, 
   onClose, 
-  onOpenEngineSettings, 
-  onOpenAvatarModal,
-  onOpenHistoryDrawer
+  onOpenAvatarModal
 }) {
   const menuRef = useRef(null);
   const [activeSubModal, setActiveSubModal] = useState(null); // 'usage' | 'subscription' | 'upgrade' | 'theme' | 'location'
@@ -60,11 +49,11 @@ export default function GeminiSettingsMenu({
         className="gemini-settings-menu animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Section 1: Account */}
+        {/* Section 1: Account (Usage limits, Manage subscription, Upgrade to SONARA Pro) */}
         <div className="settings-menu-section">
           <span className="settings-section-heading">Account</span>
           
-          {/* 1. Usage limits (Highlighted pill in screenshot) */}
+          {/* 1. Usage limits (Highlighted pill style matching Gemini screenshot) */}
           <button 
             type="button" 
             className="settings-menu-item active-pill"
@@ -95,37 +84,11 @@ export default function GeminiSettingsMenu({
           </button>
         </div>
 
-        {/* Section 2: Preferences */}
+        {/* Section 2: Preferences (Avatar, Theme, Location) */}
         <div className="settings-menu-section">
           <span className="settings-section-heading">Preferences</span>
 
-          {/* 4. Personal Intelligence / Studio Engine & GPU */}
-          <button 
-            type="button" 
-            className="settings-menu-item"
-            onClick={() => {
-              onClose();
-              if (onOpenEngineSettings) onOpenEngineSettings();
-            }}
-          >
-            <Cpu size={17} className="settings-item-icon" />
-            <span className="settings-item-label">Studio Engine & GPU</span>
-          </button>
-
-          {/* 5. Skills / Music Stems */}
-          <button 
-            type="button" 
-            className="settings-menu-item"
-            onClick={() => {
-              onClose();
-              if (onOpenEngineSettings) onOpenEngineSettings();
-            }}
-          >
-            <Sliders size={17} className="settings-item-icon" />
-            <span className="settings-item-label">Skills & Mastering</span>
-          </button>
-
-          {/* 6. Avatar (Voice Avatar Modal) */}
+          {/* 4. Avatar (Opens Voice Avatar Modal) */}
           <button 
             type="button" 
             className="settings-menu-item"
@@ -138,20 +101,7 @@ export default function GeminiSettingsMenu({
             <span className="settings-item-label">Avatar</span>
           </button>
 
-          {/* 7. Gems (Bollywood & Classical Presets) */}
-          <button 
-            type="button" 
-            className="settings-menu-item"
-            onClick={() => {
-              onClose();
-              if (onOpenEngineSettings) onOpenEngineSettings();
-            }}
-          >
-            <Diamond size={17} className="settings-item-icon" />
-            <span className="settings-item-label">Gems & Presets</span>
-          </button>
-
-          {/* 8. Theme */}
+          {/* 5. Theme */}
           <button 
             type="button" 
             className="settings-menu-item with-chevron"
@@ -163,68 +113,8 @@ export default function GeminiSettingsMenu({
             </div>
             <ChevronRight size={15} className="chevron-right-muted" />
           </button>
-        </div>
 
-        {/* Section 3: Data & privacy */}
-        <div className="settings-menu-section">
-          <span className="settings-section-heading">Data & privacy</span>
-
-          {/* 9. Import memory to SONARA */}
-          <button 
-            type="button" 
-            className="settings-menu-item"
-            onClick={() => {
-              onClose();
-              if (onOpenAvatarModal) onOpenAvatarModal();
-            }}
-          >
-            <UploadCloud size={17} className="settings-item-icon" />
-            <span className="settings-item-label">Import memory to SONARA</span>
-          </button>
-
-          {/* 10. Your public links */}
-          <button 
-            type="button" 
-            className="settings-menu-item"
-            onClick={() => {
-              onClose();
-              if (onOpenHistoryDrawer) onOpenHistoryDrawer();
-            }}
-          >
-            <Link2 size={17} className="settings-item-icon" />
-            <span className="settings-item-label">Your public links</span>
-          </button>
-
-          {/* 11. Send feedback */}
-          <button 
-            type="button" 
-            className="settings-menu-item"
-            onClick={() => {
-              window.open('https://github.com/indrajitkumar23541-a11y/SONARA/issues', '_blank');
-              onClose();
-            }}
-          >
-            <MessageSquare size={17} className="settings-item-icon" />
-            <span className="settings-item-label">Send feedback</span>
-          </button>
-
-          {/* 12. Help */}
-          <button 
-            type="button" 
-            className="settings-menu-item with-chevron"
-            onClick={() => {
-              window.open('https://github.com/indrajitkumar23541-a11y/SONARA#readme', '_blank');
-              onClose();
-            }}
-          >
-            <div className="flex-center-gap">
-              <HelpCircle size={17} className="settings-item-icon" />
-              <span className="settings-item-label">Help</span>
-            </div>
-            <ChevronRight size={15} className="chevron-right-muted" />
-          </button>
-
-          {/* 13. Location */}
+          {/* 6. Location */}
           <button 
             type="button" 
             className="settings-menu-item with-chevron"
@@ -236,23 +126,10 @@ export default function GeminiSettingsMenu({
             </div>
             <ChevronRight size={15} className="chevron-right-muted" />
           </button>
-
-          {/* 14. Activity */}
-          <button 
-            type="button" 
-            className="settings-menu-item"
-            onClick={() => {
-              onClose();
-              if (onOpenHistoryDrawer) onOpenHistoryDrawer();
-            }}
-          >
-            <Clock size={17} className="settings-item-icon" />
-            <span className="settings-item-label">Activity</span>
-          </button>
         </div>
       </div>
 
-      {/* Sub-modal Dialogs when clicking on Usage limits, Subscription, Location, etc. */}
+      {/* Sub-modal Dialogs when clicking on Usage limits, Manage subscription, Upgrade, Theme, Location */}
       {activeSubModal && (
         <div className="gemini-modal-overlay animate-fadeIn" onClick={() => setActiveSubModal(null)}>
           <div className="gemini-settings-subcard animate-scaleUp" onClick={(e) => e.stopPropagation()}>
@@ -273,7 +150,7 @@ export default function GeminiSettingsMenu({
                     {activeSubModal === 'theme' && 'Theme Settings'}
                     {activeSubModal === 'location' && 'Location & Region'}
                   </h3>
-                  <p className="modal-subhead">SONARA AI Studio Account & Engine Preferences</p>
+                  <p className="modal-subhead">SONARA AI Studio Account & Preferences</p>
                 </div>
               </div>
               <button 
