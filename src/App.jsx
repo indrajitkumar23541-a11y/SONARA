@@ -367,6 +367,30 @@ export default function App() {
     }
   };
 
+    // Auto-growing textarea handlers (Matches Gemini & Antigravity)
+  const handlePromptChange = (e) => {
+    setPromptInput(e.target.value);
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 220)}px`;
+  };
+
+  const handlePromptKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleGenerateSong();
+    }
+  };
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      if (promptInput) {
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 220)}px`;
+      }
+    }
+  }, [promptInput]);
+
   const handleSelectSuggestion = (suggestionText) => {
     setPromptInput(suggestionText);
     handleGenerateSong(suggestionText);
@@ -424,7 +448,8 @@ export default function App() {
               </h1>
 
               {/* Iconic Center Capsule Input Box */}
-              <div className="gemini-prompt-capsule-card">
+              <div className={`gemini-prompt-capsule-card ${promptInput.includes('\n') || promptInput.length > 70 ? 'is-multiline' : ''}`}>
+
                 {/* Upload / Preset Status Toast Notice */}
                 {uploadNotice && (
                   <div className="upload-notice-toast animate-fadeIn">
@@ -456,20 +481,15 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Main Text Input */}
-                  <input
+                  {/* Main Text Input (Auto-growing textarea) */}
+                  <textarea
                     ref={textareaRef}
-                    type="text"
-                    className="capsule-text-input"
+                    rows={1}
+                    className="capsule-text-input auto-grow-textarea"
                     placeholder="Ask Sonara"
                     value={promptInput}
-                    onChange={(e) => setPromptInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleGenerateSong();
-                      }
-                    }}
+                    onChange={handlePromptChange}
+                    onKeyDown={handlePromptKeyDown}
                   />
 
                   {/* Microphone Button (Speech to text) */}
@@ -591,15 +611,13 @@ export default function App() {
                       direction="top"
                     />
                   </div>
-                  <input 
-                    type="text" 
-                    className="capsule-text-input" 
+                  <textarea 
+                    rows={1}
+                    className="capsule-text-input auto-grow-textarea" 
                     placeholder="Ask Sonara to refine, change singer, or make another song..."
                     value={promptInput}
-                    onChange={(e) => setPromptInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleGenerateSong();
-                    }}
+                    onChange={handlePromptChange}
+                    onKeyDown={handlePromptKeyDown}
                   />
                   <button 
                     type="button" 

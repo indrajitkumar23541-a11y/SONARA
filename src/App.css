@@ -361,6 +361,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 3.5rem; /* Elevates prompt bar well above bottom */
   animation: fadeIn 0.4s ease;
 }
 
@@ -387,12 +388,17 @@ body {
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--border-red);
-  border-radius: 36px;
+  border-radius: 28px;
   padding: 0.65rem 0.95rem;
   box-shadow: 
     0 16px 40px -10px rgba(0, 0, 0, 0.75),
     0 0 35px rgba(239, 68, 68, 0.14);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-radius 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.gemini-prompt-capsule-card.is-multiline {
+  border-radius: 20px;
+  padding: 0.75rem 0.95rem;
 }
 
 .gemini-prompt-capsule-card:focus-within {
@@ -404,9 +410,16 @@ body {
 
 .capsule-input-row {
   display: flex;
-  align-items: center;
+  align-items: flex-end; /* Anchors plus, mic and send button at bottom when textarea expands */
   gap: 0.65rem;
   width: 100%;
+}
+
+.capsule-plus-wrapper,
+.capsule-mic-btn,
+.capsule-send-btn {
+  flex-shrink: 0;
+  margin-bottom: 2px;
 }
 
 /* Plus Button (Left of Capsule) */
@@ -654,9 +667,32 @@ body {
   outline: none;
   color: #ffffff;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   font-weight: 400;
-  padding: 0.4rem 0.25rem;
+  padding: 0.35rem 0.45rem;
+  resize: none;
+  min-height: 28px;
+  max-height: 220px;
+  line-height: 1.5;
+  overflow-y: auto;
+  word-break: break-word;
+  white-space: pre-wrap;
+  display: block;
+  box-sizing: border-box;
+  transition: height 0.12s ease-out;
+}
+
+.capsule-text-input::-webkit-scrollbar {
+  width: 4px;
+}
+
+.capsule-text-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.capsule-text-input::-webkit-scrollbar-thumb {
+  background: rgba(239, 68, 68, 0.35);
+  border-radius: 4px;
 }
 
 .capsule-text-input::placeholder {
@@ -3062,8 +3098,9 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: calc(100vh - 84px);
-    padding: 0.5rem 0;
+    min-height: calc(100vh - 120px) !important;
+    padding: 0.5rem 0 2rem 0 !important;
+    margin-bottom: 3.5rem !important; /* Bottom se elevated */
   }
 
   .gemini-hero-sparkle-wrap {
@@ -3135,13 +3172,14 @@ body {
   /* 6. Prompt Capsule Docked at Bottom (Matches Image 1) */
   .gemini-prompt-capsule-card {
     width: 100%;
-    border-radius: 30px;
-    padding: 0.55rem 0.85rem;
+    border-radius: 28px;
+    padding: 0.65rem 0.85rem;
     background: rgba(18, 7, 10, 0.88);
     border: 1px solid rgba(239, 68, 68, 0.3);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 16px rgba(239, 68, 68, 0.15);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.85), 0 0 18px rgba(239, 68, 68, 0.15);
     backdrop-filter: blur(28px);
-    margin-top: 0.5rem;
+    margin-top: 1rem;
+    margin-bottom: 2.75rem !important; /* Bottom se thoda upar */
   }
 
   .capsule-text-input {
