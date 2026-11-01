@@ -53,7 +53,11 @@ export default function MobileDrawer({
             }}
           >
             <div className="drawer-brand-emblem">
-              <Sparkles size={18} className="text-red-primary" />
+              <img 
+                src="/sonara_emblem.jpg" 
+                alt="SONARA" 
+                className="drawer-brand-emblem-img" 
+              />
             </div>
             <span className="drawer-brand-name">SONARA</span>
           </div>

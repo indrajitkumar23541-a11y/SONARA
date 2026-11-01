@@ -20,9 +20,15 @@ export default function GeminiTopNav({
           <Menu size={19} />
         </button>
 
-        {/* Mobile Brand Logo & Name (Matches Image 1) */}
+        {/* Mobile Brand Logo & Name */}
         <div className="mobile-brand-title-wrap" onClick={onNewChat}>
-          <Sparkles size={16} className="text-red-primary mobile-brand-sparkle" />
+          <div className="mobile-brand-emblem-halo">
+            <img 
+              src="/sonara_emblem.jpg" 
+              alt="SONARA" 
+              className="mobile-brand-emblem-img" 
+            />
+          </div>
           <span className="mobile-brand-title">SONARA</span>
         </div>
       </div>

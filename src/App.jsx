@@ -409,9 +409,15 @@ export default function App() {
           {!generatedSong && !isGenerating ? (
             /* --- Initial "Where should we start?" State --- */
             <div className="gemini-hero-container">
-              {/* Centered Large Title & Sparkle (Matches Image 1) */}
-              <div className="gemini-hero-sparkle-wrap">
-                <Sparkles size={32} className="text-red-primary hero-sparkle-icon" />
+              {/* Centered Large Title & Sonara Official Logo */}
+              <div className="sonara-hero-logo-wrap">
+                <div className="sonara-hero-emblem-halo">
+                  <img 
+                    src="/sonara_emblem.jpg" 
+                    alt="SONARA AI" 
+                    className="sonara-hero-emblem-img" 
+                  />
+                </div>
               </div>
               <h1 className="gemini-hero-title">
                 Where should we start?

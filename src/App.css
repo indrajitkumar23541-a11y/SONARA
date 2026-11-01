@@ -4589,3 +4589,88 @@ body {
     max-width: 860px;
   }
 }
+
+
+/* ==========================================================================
+   SONARA OFFICIAL BRAND EMBLEM & LOGO STYLING
+   ========================================================================== */
+
+.sonara-hero-logo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.sonara-hero-emblem-halo {
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  background: #000;
+  border: 1.5px solid rgba(239, 68, 68, 0.45);
+  box-shadow: 
+    0 0 35px rgba(239, 68, 68, 0.4),
+    0 10px 25px rgba(0, 0, 0, 0.9),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.sonara-hero-emblem-halo:hover {
+  transform: scale(1.08);
+  box-shadow: 
+    0 0 45px rgba(239, 68, 68, 0.65),
+    0 12px 30px rgba(0, 0, 0, 0.95),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+.sonara-hero-emblem-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mobile-brand-emblem-halo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #000;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-brand-emblem-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.drawer-brand-emblem-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.member-card-emblem-img {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+  object-fit: cover;
+  display: inline-block;
+  vertical-align: middle;
+}

@@ -282,7 +282,11 @@ export default function GeminiSettingsMenu({
                   <div className="titanium-member-card">
                     <div className="member-card-header">
                       <div className="member-card-brand">
-                        <span className="brand-dot" />
+                        <img 
+                          src="/sonara_emblem.jpg" 
+                          alt="SONARA" 
+                          className="member-card-emblem-img" 
+                        />
                         <span>SONARA STUDIO PRO</span>
                       </div>
                       <span className="member-tier-pill">LIFETIME CREATOR</span>

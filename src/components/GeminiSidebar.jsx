@@ -28,14 +28,7 @@ export default function GeminiSidebar({
               src="/sonara_emblem.jpg" 
               alt="SONARA" 
               className="emblem-img"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
             />
-            {/* Fallback stylized red sparkle if image is loading */}
-            <div className="emblem-sparkle-core">
-              <Sparkles size={20} className="text-red-primary" />
-            </div>
           </div>
         </button>
 
