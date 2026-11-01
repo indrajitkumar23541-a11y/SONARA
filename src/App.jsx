@@ -382,6 +382,8 @@ export default function App() {
     }
   };
 
+  const isMultiline = Boolean(promptInput && (promptInput.includes('\n') || promptInput.length > 55));
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -389,7 +391,7 @@ export default function App() {
         textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 220)}px`;
       }
     }
-  }, [promptInput]);
+  }, [promptInput, isMultiline]);
 
   const handleSelectSuggestion = (suggestionText) => {
     setPromptInput(suggestionText);
@@ -428,8 +430,8 @@ export default function App() {
           onOpenSettings={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
         />
 
-        {/* Center Content Canvas */}
-        <div className="gemini-center-content">
+        {/* Scrollable Middle Content Area (Nav stays fixed at top, content scrolls fast) */}
+        <div className="gemini-scrollable-body">
           {!generatedSong && !isGenerating ? (
             /* --- Initial "Where should we start?" State --- */
             <div className="gemini-hero-container">
@@ -447,82 +449,8 @@ export default function App() {
                 Where should we start?
               </h1>
 
-              {/* Iconic Center Capsule Input Box */}
-              <div className={`gemini-prompt-capsule-card ${promptInput.includes('\n') || promptInput.length > 70 ? 'is-multiline' : ''}`}>
-
-                {/* Upload / Preset Status Toast Notice */}
-                {uploadNotice && (
-                  <div className="upload-notice-toast animate-fadeIn">
-                    <CheckCircle2 size={16} className="text-red-primary" />
-                    <span>{uploadNotice}</span>
-                  </div>
-                )}
-
-                <div className="capsule-input-row">
-                  {/* Left Plus Button (Opens Gemini Tools Menu) */}
-                  <div className="capsule-plus-wrapper">
-                    <button 
-                      type="button"
-                      className={`capsule-plus-btn ${isPlusMenuOpen ? 'active' : ''}`}
-                      onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
-                      title={isPlusMenuOpen ? "Close menu" : "Upload Audio, Lyrics or Track Presets"}
-                    >
-                      {isPlusMenuOpen ? <X size={18} /> : <Plus size={18} />}
-                    </button>
-
-                    <GeminiToolsMenu 
-                      isOpen={isPlusMenuOpen}
-                      onClose={() => setIsPlusMenuOpen(false)}
-                      onAudioSelected={handleAudioSelected}
-                      onLyricsSelected={handleLyricsSelected}
-                      onGenreSelected={handleGenreSelected}
-                      onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
-                      direction="bottom"
-                    />
-                  </div>
-
-                  {/* Main Text Input (Auto-growing textarea) */}
-                  <textarea
-                    ref={textareaRef}
-                    rows={1}
-                    className="capsule-text-input auto-grow-textarea"
-                    placeholder="Ask Sonara"
-                    value={promptInput}
-                    onChange={handlePromptChange}
-                    onKeyDown={handlePromptKeyDown}
-                  />
-
-                  {/* Microphone Button (Speech to text) */}
-                  <button 
-                    type="button"
-                    className={`capsule-mic-btn ${isListening ? 'active-listening' : ''}`}
-                    onClick={handleSpeechInput}
-                    title="Microphone dabakar boliye"
-                  >
-                    {isListening ? (
-                      <MicOff size={18} className="text-red-primary animate-pulse" />
-                    ) : (
-                      <Mic size={18} />
-                    )}
-                  </button>
-
-                  {/* Send Button (Visible when text entered) */}
-                  {promptInput.trim() && (
-                    <button 
-                      type="button"
-                      className="capsule-send-btn animate-fadeIn"
-                      onClick={() => handleGenerateSong()}
-                      title="Generate Song"
-                    >
-                      <ArrowUp size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* 3 Suggestions below Prompt Box (Matches screenshot layout) */}
+              {/* 3 Suggestions (Above the bottom prompt bar, exactly like Gemini) */}
               <div className="gemini-suggestions-deck">
-                {/* 1. Debug Python Code equivalent -> Compose Romantic Song */}
                 <button 
                   className="suggestion-tile"
                   onClick={() => handleSelectSuggestion('Help me compose a romantic Bollywood rain song with acoustic guitar')}
@@ -531,7 +459,6 @@ export default function App() {
                   <span className="tile-text">Help me compose a romantic Bollywood rain song</span>
                 </button>
 
-                {/* 2. Design Poster equivalent -> Calibrate Voice Avatar */}
                 <button 
                   className="suggestion-tile"
                   onClick={() => setIsAvatarModalOpen(true)}
@@ -540,7 +467,6 @@ export default function App() {
                   <span className="tile-text">Calibrate my 5-second AI Voice Avatar</span>
                 </button>
 
-                {/* 3. Big Life Decision equivalent -> Party Dance Track */}
                 <button 
                   className="suggestion-tile"
                   onClick={() => handleSelectSuggestion('Help me create an energetic high-speed Bollywood party dance track')}
@@ -549,8 +475,6 @@ export default function App() {
                   <span className="tile-text">Help me create an energetic high-speed party anthem</span>
                 </button>
               </div>
-
-
             </div>
           ) : isGenerating ? (
             /* --- Generating Song Status --- */
@@ -587,23 +511,100 @@ export default function App() {
                 selectedGenre={GENRES[0]}
                 onReset={handleResetToNewChat}
               />
+            </div>
+          )}
+        </div>
 
-              {/* Quick Follow-up Input Bar at bottom */}
-              <div className="followup-input-container">
-                <div className="capsule-input-row followup-capsule">
+        {/* Fixed/Docked Bottom Prompt Area (Anchored near bottom, auto-grows UPWARDS like Gemini Image 2) */}
+        {!isGenerating && (
+          <div className="gemini-bottom-dock">
+            <div className={`gemini-prompt-capsule-card ${isMultiline ? 'is-multiline' : ''}`}>
+              {/* Upload / Preset Status Toast Notice */}
+              {uploadNotice && (
+                <div className="upload-notice-toast animate-fadeIn">
+                  <CheckCircle2 size={16} className="text-red-primary" />
+                  <span>{uploadNotice}</span>
+                </div>
+              )}
+
+              {isMultiline ? (
+                /* Multiline Capsule Layout: Textarea full-width on top, buttons on bottom bar (Exactly like Gemini Image 6) */
+                <div className="capsule-multiline-wrap">
+                  <textarea
+                    ref={textareaRef}
+                    rows={2}
+                    className="capsule-text-input auto-grow-textarea multiline-top"
+                    placeholder={generatedSong ? "Ask Sonara to refine, change singer, or make another song..." : "Ask Sonara"}
+                    value={promptInput}
+                    onChange={handlePromptChange}
+                    onKeyDown={handlePromptKeyDown}
+                  />
+
+                  <div className="capsule-bottom-bar">
+                    <div className="capsule-plus-wrapper">
+                      <button 
+                        type="button" 
+                        className={`capsule-plus-btn ${isPlusMenuOpen ? 'active' : ''}`}
+                        onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
+                        title={isPlusMenuOpen ? "Close menu" : "Upload Audio, Lyrics or Track Presets"}
+                      >
+                        {isPlusMenuOpen ? <X size={18} /> : <Plus size={18} />}
+                      </button>
+
+                      <GeminiToolsMenu 
+                        isOpen={isPlusMenuOpen}
+                        onClose={() => setIsPlusMenuOpen(false)}
+                        onAudioSelected={handleAudioSelected}
+                        onLyricsSelected={handleLyricsSelected}
+                        onGenreSelected={handleGenreSelected}
+                        onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+                        direction="top"
+                      />
+                    </div>
+
+                    <div className="capsule-action-right">
+                      <button 
+                        type="button"
+                        className={`capsule-mic-btn ${isListening ? 'active-listening' : ''}`}
+                        onClick={handleSpeechInput}
+                        title="Microphone dabakar boliye"
+                      >
+                        {isListening ? (
+                          <MicOff size={18} className="text-red-primary animate-pulse" />
+                        ) : (
+                          <Mic size={18} />
+                        )}
+                      </button>
+
+                      {promptInput.trim() && (
+                        <button 
+                          type="button"
+                          className="capsule-send-btn animate-fadeIn"
+                          onClick={() => handleGenerateSong()}
+                          title="Generate Song"
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Single-line Compact Capsule Layout (Matches Gemini Image 1 & 3) */
+                <div className="capsule-input-row">
                   <div className="capsule-plus-wrapper">
                     <button 
                       type="button" 
-                      className={`capsule-plus-btn ${isFollowupPlusOpen ? 'active' : ''}`}
-                      onClick={() => setIsFollowupPlusOpen(!isFollowupPlusOpen)}
-                      title={isFollowupPlusOpen ? "Close menu" : "Upload Audio, Lyrics or Track Presets"}
+                      className={`capsule-plus-btn ${isPlusMenuOpen ? 'active' : ''}`}
+                      onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
+                      title={isPlusMenuOpen ? "Close menu" : "Upload Audio, Lyrics or Track Presets"}
                     >
-                      {isFollowupPlusOpen ? <X size={18} /> : <Plus size={18} />}
+                      {isPlusMenuOpen ? <X size={18} /> : <Plus size={18} />}
                     </button>
 
                     <GeminiToolsMenu 
-                      isOpen={isFollowupPlusOpen}
-                      onClose={() => setIsFollowupPlusOpen(false)}
+                      isOpen={isPlusMenuOpen}
+                      onClose={() => setIsPlusMenuOpen(false)}
                       onAudioSelected={handleAudioSelected}
                       onLyricsSelected={handleLyricsSelected}
                       onGenreSelected={handleGenreSelected}
@@ -611,26 +612,45 @@ export default function App() {
                       direction="top"
                     />
                   </div>
-                  <textarea 
+
+                  <textarea
+                    ref={textareaRef}
                     rows={1}
-                    className="capsule-text-input auto-grow-textarea" 
-                    placeholder="Ask Sonara to refine, change singer, or make another song..."
+                    className="capsule-text-input auto-grow-textarea"
+                    placeholder={generatedSong ? "Ask Sonara to refine, change singer, or make another song..." : "Ask Sonara"}
                     value={promptInput}
                     onChange={handlePromptChange}
                     onKeyDown={handlePromptKeyDown}
                   />
+
                   <button 
-                    type="button" 
-                    className="capsule-send-btn"
-                    onClick={() => handleGenerateSong()}
+                    type="button"
+                    className={`capsule-mic-btn ${isListening ? 'active-listening' : ''}`}
+                    onClick={handleSpeechInput}
+                    title="Microphone dabakar boliye"
                   >
-                    <ArrowUp size={16} />
+                    {isListening ? (
+                      <MicOff size={18} className="text-red-primary animate-pulse" />
+                    ) : (
+                      <Mic size={18} />
+                    )}
                   </button>
+
+                  {promptInput.trim() && (
+                    <button 
+                      type="button"
+                      className="capsule-send-btn animate-fadeIn"
+                      onClick={() => handleGenerateSong()}
+                      title="Generate Song"
+                    >
+                      <ArrowUp size={16} />
+                    </button>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 3. Voice Avatar Calibration Modal */}

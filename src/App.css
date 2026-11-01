@@ -38,12 +38,24 @@
   padding: 0;
 }
 
-body {
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Viewport never scrolls */
   background-color: var(--bg-canvas);
   color: var(--text-main);
   font-family: var(--font-display);
-  overflow-x: hidden;
+  font-size: 16px; /* Eliminates browser auto-zoom bug on mobile & balances laptop scale */
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* ==========================================================================
@@ -52,13 +64,14 @@ body {
 
 .gemini-app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100dvh;
+  height: 100vh;
   width: 100vw;
   background: 
-    radial-gradient(ellipse 90% 65% at 50% 42%, rgba(220, 38, 38, 0.15) 0%, rgba(20, 4, 7, 0.65) 45%, #050508 95%),
+    radial-gradient(ellipse 90% 65% at 50% 35%, rgba(220, 38, 38, 0.08) 0%, rgba(14, 4, 7, 0.55) 45%, #050508 95%),
     #050508;
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden; /* Static full viewport layout */
 }
 
 /* ==========================================================================
@@ -258,26 +271,74 @@ body {
 }
 
 /* ==========================================================================
-   2. MAIN CANVAS & TOP NAV
+   2. MAIN CANVAS, STATIONARY TOP NAV, SCROLLABLE BODY & BOTTOM DOCK
    ========================================================================== */
 
 .gemini-main-canvas {
   margin-left: 68px;
   flex: 1;
-  min-height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden; /* Canvas itself never scrolls */
+  min-width: 0;
 }
 
+/* Stationary top navbar - fixed permanently at top of view */
 .gemini-top-nav {
-  height: 60px;
+  flex-shrink: 0;
+  height: 56px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.75rem;
-  position: sticky;
-  top: 0;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 50;
+  background: rgba(5, 5, 8, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Fast, silky-smooth middle scrollable body */
+.gemini-scrollable-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem 1rem 0.5rem 1rem;
+  width: 100%;
+  position: relative;
+}
+
+.gemini-scrollable-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gemini-scrollable-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
+.gemini-scrollable-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+/* Docked bottom prompt area - elevated above bottom edge */
+.gemini-bottom-dock {
+  flex-shrink: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 1.25rem 1.85rem 1.25rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(5, 5, 8, 0.88) 25%, #050508 100%);
   z-index: 40;
 }
 
@@ -381,31 +442,79 @@ body {
 }
 
 /* Iconic Center Capsule Input Box (Matches Screenshot) */
+.gemini-hero-container {
+  width: 100%;
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin: auto 0 1.25rem 0; /* Centers hero and places suggestions above bottom dock */
+}
+
 .gemini-prompt-capsule-card {
   width: 100%;
-  max-width: 780px;
-  background: var(--bg-capsule);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid var(--border-red);
+  max-width: 820px;
+  background: #181215; /* Clean dark obsidian matching Gemini Image 2 & 6 */
+  border: 1px solid rgba(255, 255, 255, 0.06); /* NO HARSH RED LINING! */
   border-radius: 28px;
   padding: 0.65rem 0.95rem;
   box-shadow: 
-    0 16px 40px -10px rgba(0, 0, 0, 0.75),
-    0 0 35px rgba(239, 68, 68, 0.14);
-  transition: border-radius 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    0 12px 30px -6px rgba(0, 0, 0, 0.75),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: border-radius 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
 }
 
 .gemini-prompt-capsule-card.is-multiline {
-  border-radius: 20px;
-  padding: 0.75rem 0.95rem;
+  border-radius: 22px;
+  padding: 0.75rem 1rem 0.65rem 1rem;
 }
 
 .gemini-prompt-capsule-card:focus-within {
-  border-color: rgba(239, 68, 68, 0.65);
+  border-color: rgba(255, 255, 255, 0.16); /* Subtle clean focus like Gemini */
   box-shadow: 
-    0 20px 45px -10px rgba(0, 0, 0, 0.8),
-    0 0 45px rgba(239, 68, 68, 0.25);
+    0 16px 36px -8px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Multiline Capsule Structure (Matches Image 6) */
+.capsule-multiline-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0.45rem;
+}
+
+.capsule-multiline-wrap .multiline-top {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.25rem 0.35rem 0.15rem 0.35rem;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.capsule-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.capsule-action-right {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .capsule-input-row {
@@ -957,35 +1066,32 @@ body {
    ========================================================================== */
 
 .gemini-suggestions-deck {
-  width: 100%;
-  max-width: 780px;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  margin-top: 2rem;
+  width: 100%;
+  max-width: 820px;
 }
 
 .suggestion-tile {
+  background: #181215; /* Clean solid surface matching Gemini */
+  border: 1px solid rgba(255, 255, 255, 0.04); /* NO HARSH RED LINING! */
+  border-radius: 14px;
+  padding: 0.95rem 1.15rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.95rem 1.35rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
+  gap: 0.95rem;
   cursor: pointer;
-  text-align: left;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
   width: 100%;
+  text-align: left;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .suggestion-tile:hover {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.12);
+  background: #23181d;
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .tile-icon {
@@ -2990,6 +3096,10 @@ body {
 }
 
 @media (max-width: 768px) {
+  .gemini-bottom-dock {
+    padding: 0.35rem 0.85rem calc(1.4rem + env(safe-area-inset-bottom, 0px)) 0.85rem !important;
+  }
+
   /* 1. Layout adjustment */
   .gemini-app-layout {
     flex-direction: column;
@@ -3093,17 +3203,15 @@ body {
     margin: 0 auto;
   }
 
-  .gemini-hero-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: calc(100vh - 120px) !important;
-    padding: 0.5rem 0 2rem 0 !important;
-    margin-bottom: 3.5rem !important; /* Bottom se elevated */
+    .gemini-hero-container {
+    width: 100%;
+    max-width: 100%;
+    margin: auto 0 0.5rem 0 !important;
+    min-height: auto !important;
+    gap: 1rem;
+    padding: 0.25rem 0 !important;
   }
-
-  .gemini-hero-sparkle-wrap {
+.gemini-hero-sparkle-wrap {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -3172,14 +3280,14 @@ body {
   /* 6. Prompt Capsule Docked at Bottom (Matches Image 1) */
   .gemini-prompt-capsule-card {
     width: 100%;
-    border-radius: 28px;
+    border-radius: 24px;
     padding: 0.65rem 0.85rem;
-    background: rgba(18, 7, 10, 0.88);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.85), 0 0 18px rgba(239, 68, 68, 0.15);
+    background: #181215 !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important; /* NO RED LINING ON SIDES! */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75) !important;
     backdrop-filter: blur(28px);
-    margin-top: 1rem;
-    margin-bottom: 2.75rem !important; /* Bottom se thoda upar */
+    margin-top: 0.35rem;
+    margin-bottom: 0 !important;
   }
 
   .capsule-text-input {
