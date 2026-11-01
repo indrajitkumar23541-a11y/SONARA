@@ -2818,12 +2818,16 @@ body {
     gap: 0.5rem;
   }
 
-  /* 7. Voice Avatar Modal on Mobile */
-  .voice-modal-card {
-    width: 100%;
-    max-height: 90vh;
-    border-radius: 22px 22px 14px 14px;
-    padding: 1.25rem 1rem;
+  /* 7. Voice Avatar Modal & History Drawer on Mobile */
+  .voice-modal-card,
+  .gemini-modal-card,
+  .gemini-drawer-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88vh !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 1.25rem 1rem !important;
+    overflow-y: auto !important;
   }
 
   .avatar-legends-grid {
