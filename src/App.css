@@ -3149,11 +3149,21 @@ body {
   }
 
   /* 5. Tools Menu inside capsule - keep it centered & inside screen bounds */
-  .gemini-tools-menu {
-    width: calc(100vw - 2rem) !important;
-    max-width: 360px !important;
+  .capsule-text-input {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS Mobile */
+  }
+
+  /* 5. Tools Menu inside capsule - Opens UPWARDS on mobile so it never goes offscreen */
+  .gemini-tools-menu,
+  .gemini-tools-menu.direction-bottom,
+  .gemini-tools-menu.direction-top {
+    bottom: calc(100% + 12px) !important;
+    top: auto !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
+    width: calc(100vw - 2rem) !important;
+    max-width: 360px !important;
+    z-index: 150 !important;
   }
 
   /* 6. Settings Modal on Mobile - Bottom Sheet Adaptive */
@@ -3254,9 +3264,73 @@ body {
   }
 
   /* 8. Player card on Mobile */
-  .gemini-player-card {
-    padding: 1.25rem 1rem;
-    border-radius: 20px;
+  .gemini-player-card,
+  .gemini-song-card {
+    padding: 1.15rem 1rem !important;
+    border-radius: 20px !important;
+    gap: 1rem !important;
+  }
+
+  .song-card-header-row {
+    flex-wrap: wrap !important;
+    gap: 0.65rem !important;
+  }
+
+  .song-badge-ribbon {
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+  }
+
+  .track-layout-grid {
+    flex-direction: row !important;
+    gap: 1rem !important;
+    align-items: center !important;
+  }
+
+  .red-vinyl-disc {
+    width: 68px !important;
+    height: 68px !important;
+    min-width: 68px !important;
+  }
+
+  .track-song-title {
+    font-size: 1.18rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .track-artist-sub {
+    font-size: 0.78rem !important;
+  }
+
+  .gemini-karaoke-box {
+    padding: 0.85rem 1rem !important;
+    border-radius: 14px !important;
+  }
+
+  .karaoke-lines-scroll {
+    max-height: 110px !important;
+  }
+
+  .transport-controls-row {
+    gap: 0.75rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  .gemini-play-btn {
+    width: 54px !important;
+    height: 54px !important;
+  }
+
+  .transport-right-actions {
+    flex: 1 !important;
+    justify-content: flex-end !important;
+    gap: 0.5rem !important;
+  }
+
+  .download-master-btn {
+    padding: 0.55rem 0.85rem !important;
+    font-size: 0.78rem !important;
+    border-radius: 10px !important;
   }
 
   .player-main-header {
@@ -4448,3 +4522,70 @@ body {
 
 
 
+
+
+/* ==========================================================================
+   TABLET RESPONSIVE STYLES (769px to 1024px: iPad, Tablet Portrait & Landscape)
+   ========================================================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .gemini-sidebar {
+    width: 64px;
+  }
+
+  .gemini-main-canvas {
+    margin-left: 64px;
+    width: calc(100% - 64px);
+    padding: 0 1.25rem 2rem 1.25rem;
+  }
+
+  .gemini-hero-title {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    margin-bottom: 2rem;
+  }
+
+  .gemini-center-content {
+    max-width: 680px;
+    padding: 2rem 1rem;
+    width: 100%;
+  }
+
+  .gemini-prompt-capsule-card {
+    max-width: 680px;
+    width: 100%;
+  }
+
+  .gemini-suggestions-deck {
+    max-width: 680px;
+    width: 100%;
+  }
+
+  .luxury-settings-dialog {
+    max-width: 580px;
+    width: 90%;
+  }
+
+  .gemini-song-card {
+    padding: 1.5rem;
+  }
+
+  .track-layout-grid {
+    gap: 1.25rem;
+  }
+}
+
+/* ==========================================================================
+   LARGE DESKTOP & 4K DISPLAYS (>= 1920px)
+   ========================================================================== */
+@media (min-width: 1920px) {
+  .gemini-center-content {
+    max-width: 860px;
+  }
+
+  .gemini-prompt-capsule-card {
+    max-width: 860px;
+  }
+
+  .gemini-suggestions-deck {
+    max-width: 860px;
+  }
+}

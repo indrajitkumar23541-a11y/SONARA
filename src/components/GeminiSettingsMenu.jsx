@@ -28,7 +28,7 @@ export default function GeminiSettingsMenu({
   const [activeSubModal, setActiveSubModal] = useState(null); // 'usage' | 'subscription' | 'upgrade' | 'theme' | 'location'
   const [selectedTheme, setSelectedTheme] = useState('obsidian-crimson');
 
-  // Close when clicking outside
+  // Close when clicking or tapping outside on mobile/tablet
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -39,9 +39,11 @@ export default function GeminiSettingsMenu({
     };
     if (isOpen) {
       document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('touchstart', handleOutsideClick, { passive: true });
     }
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
     };
   }, [isOpen, onClose, activeSubModal]);
 

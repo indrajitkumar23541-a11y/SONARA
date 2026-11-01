@@ -117,9 +117,11 @@ export default function App() {
     };
     if (isAvatarDropdownOpen) {
       document.addEventListener('mousedown', handleAvatarOutside);
+      document.addEventListener('touchstart', handleAvatarOutside, { passive: true });
     }
     return () => {
       document.removeEventListener('mousedown', handleAvatarOutside);
+      document.removeEventListener('touchstart', handleAvatarOutside);
     };
   }, [isAvatarDropdownOpen]);
 
