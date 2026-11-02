@@ -36,7 +36,7 @@ export default function GeminiSidebar({
         <div className="sidebar-nav-group">
           {/* 1. New Song / Chat */}
           <button 
-            className={`sidebar-icon-btn ${activeView === 'chat' ? 'active' : ''}`}
+            className="sidebar-icon-btn"
             onClick={onNewChat}
             title="New Song / Chat"
           >
