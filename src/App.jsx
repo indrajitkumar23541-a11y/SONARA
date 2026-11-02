@@ -282,8 +282,8 @@ export default function App() {
       // 2. Synthesize Song with Selected Voice Avatar
       setGeneratingStep(`Synthesizing singing vocals with ${voiceProfile.name}...`);
       const controller = new AbortController();
-      const activeEngine = localStorage.getItem('sonara_active_engine') || 'suno';
-      const timeoutMs = activeEngine === 'colab' ? 95000 : (activeEngine === 'suno' ? 65000 : 30000);
+      const activeEngine = localStorage.getItem('sonara_active_engine') || 'colab';
+      const timeoutMs = 95000;
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const songRes = await fetch('http://127.0.0.1:8000/api/generate-song', {
@@ -302,7 +302,7 @@ export default function App() {
           suno_api_key: localStorage.getItem('sonara_suno_api_key') || '',
           suno_base_url: localStorage.getItem('sonara_suno_base_url') || 'https://api.goapi.ai',
           suno_provider: localStorage.getItem('sonara_suno_provider') || 'goapi',
-          colab_url: localStorage.getItem('sonara_colab_url') || '',
+          colab_url: localStorage.getItem('sonara_colab_url') || 'https://acres-airlines-ball-reductions.trycloudflare.com',
           vocal_tuning: 50,
           vocal_reverb: 40,
           enable_harmonies: true,

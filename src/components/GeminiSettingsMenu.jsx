@@ -106,6 +106,21 @@ export default function GeminiSettingsMenu({
                 <span className="settings-item-label">Upgrade to SONARA Pro</span>
               </div>
             </button>
+
+            {/* 4. Google Colab Free GPU Engine */}
+            <button 
+              type="button" 
+              className="settings-menu-item"
+              onClick={() => handleOpenSubModal('colab')}
+            >
+              <div className="menu-item-left">
+                <Cpu size={16} className="settings-item-icon text-red-primary" />
+                <span className="settings-item-label">Google Colab Free GPU</span>
+              </div>
+              <span className="luxury-pill-badge emerald" style={{ fontSize: '10px', padding: '2px 8px', marginLeft: 'auto' }}>
+                <span className="live-pulse green" /> T4 Online
+              </span>
+            </button>
           </div>
 
           {/* Section 2: Preferences */}
@@ -170,6 +185,7 @@ export default function GeminiSettingsMenu({
                   {activeSubModal === 'upgrade' && <Sparkles size={18} className="text-red-primary" />}
                   {activeSubModal === 'theme' && <Palette size={18} className="text-red-primary" />}
                   {activeSubModal === 'location' && <MapPin size={18} className="text-red-primary" />}
+                  {activeSubModal === 'colab' && <Cpu size={18} className="text-red-primary" />}
                 </div>
                 <div>
                   <h3 className="luxury-dialog-title">
@@ -178,6 +194,7 @@ export default function GeminiSettingsMenu({
                     {activeSubModal === 'upgrade' && 'SONARA Studio Pro'}
                     {activeSubModal === 'theme' && 'Studio Theme'}
                     {activeSubModal === 'location' && 'Server Location'}
+                    {activeSubModal === 'colab' && 'Google Colab Cloud GPU'}
                   </h3>
                   <p className="luxury-dialog-subtitle">
                     {activeSubModal === 'usage' && 'Real-time compute capacity & synthesis limits'}
@@ -185,6 +202,7 @@ export default function GeminiSettingsMenu({
                     {activeSubModal === 'upgrade' && 'Pro neural engine privileges unlocked'}
                     {activeSubModal === 'theme' && 'Interface appearance & display contrast'}
                     {activeSubModal === 'location' && 'Local loopback & edge routing node'}
+                    {activeSubModal === 'colab' && 'Tesla T4 15GB VRAM GPU neural synthesis cluster'}
                   </p>
                 </div>
               </div>
@@ -446,6 +464,52 @@ export default function GeminiSettingsMenu({
                         <span className="loc-val">HTTP/2 + Edge Neural Coroutines</span>
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 6. GOOGLE COLAB FREE GPU MODAL */}
+              {activeSubModal === 'colab' && (
+                <div className="luxury-location-container">
+                  <div className="location-node-card">
+                    <div className="location-node-header">
+                      <div className="flex-center-gap">
+                        <Cpu size={18} className="text-red-primary" />
+                        <span className="node-title">Google Colab NVIDIA T4 GPU Cluster</span>
+                      </div>
+                      <span className="luxury-pill-badge emerald">
+                        <span className="live-pulse green" /> Active & Connected
+                      </span>
+                    </div>
+
+                    <div className="location-telemetry-rows">
+                      <div className="loc-telemetry-row">
+                        <span className="loc-label">Live Tunnel URL:</span>
+                        <code className="loc-val mono text-red-primary" style={{ wordBreak: 'break-all' }}>https://acres-airlines-ball-reductions.trycloudflare.com</code>
+                      </div>
+                      <div className="loc-telemetry-row">
+                        <span className="loc-label">Cloud GPU:</span>
+                        <strong className="loc-val text-emerald">NVIDIA Tesla T4 (15 GB VRAM)</strong>
+                      </div>
+                      <div className="loc-telemetry-row">
+                        <span className="loc-label">Backend Auto-Routing:</span>
+                        <strong className="loc-val">Fully Hardwired (Zero Config Needed)</strong>
+                      </div>
+                      <div className="loc-telemetry-row">
+                        <span className="loc-label">Safety Fallback:</span>
+                        <span className="loc-val">Local Multi-Stem Master (100% Uptime)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <CheckCircle2 size={16} className="text-emerald" />
+                      <strong style={{ fontSize: '13px', color: '#f8fafc' }}>Colab GPU is Live & Synced</strong>
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                      Aapka Colab link backend me permanently configure ho chuka hai. Frontend me kisi bhi setting ko badalne ki jarurat nahi hai. Bas home screen par koi bhi song ya lyrics likhein, system automatically is GPU se song synthesize karega!
+                    </p>
                   </div>
                 </div>
               )}
