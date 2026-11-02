@@ -68,6 +68,7 @@ class SongGenerationRequest(BaseModel):
     suno_api_key: Optional[str] = None
     suno_base_url: Optional[str] = "https://api.goapi.ai"
     suno_provider: Optional[str] = "goapi"
+    colab_url: Optional[str] = None
 
 
 class SunoTestRequest(BaseModel):
@@ -699,6 +700,49 @@ async def generate_song(req: SongGenerationRequest):
         if suno_res:
             return suno_res
         print("[Suno Note] Cloud API not active or key pending. Continuing with Studio Melodic Pipeline...")
+
+    # Check Google Colab Free NVIDIA T4 GPU Engine
+    colab_target_url = req.colab_url or os.environ.get("SONARA_COLAB_URL")
+    if req.cloud_provider == "colab" and colab_target_url:
+        try:
+            import httpx
+            import base64
+            colab_clean = colab_target_url.rstrip("/")
+            print(f"[{time.strftime('%X')}] ⚡ Offloading song generation to Google Colab Free GPU ({colab_clean})...")
+            async with httpx.AsyncClient(timeout=95.0) as client:
+                colab_payload = {
+                    "lyrics": req.lyrics,
+                    "genre_id": req.genre_id,
+                    "musical_scale": req.musical_scale,
+                    "voice_gender": req.voice_gender,
+                    "vocal_tuning": req.vocal_tuning,
+                    "vocal_reverb": req.vocal_reverb,
+                    "enable_harmonies": req.enable_harmonies,
+                    "enable_sidechain": req.enable_sidechain,
+                    "enable_mastering": req.enable_mastering
+                }
+                c_resp = await client.post(f"{colab_clean}/api/generate-song", json=colab_payload)
+                if c_resp.status_code == 200:
+                    c_data = c_resp.json()
+                    if "master_audio_base64" in c_data:
+                        b64_str = c_data["master_audio_base64"].split(",")[-1]
+                        master_path = PUBLIC_AUDIO_DIR / f"colab_master_{timestamp}.mp3"
+                        with open(master_path, "wb") as f:
+                            f.write(base64.b64decode(b64_str))
+                        duration = get_audio_duration(master_path) or c_data.get("duration", 45.0)
+                        line_dur = duration / max(1, len(cleaned_lines))
+                        print(f"[{time.strftime('%X')}] ✓ Colab T4 GPU Master successfully generated ({duration:.1f}s)!")
+                        return {
+                            "master_url": f"http://127.0.0.1:8000/audio/{master_path.name}",
+                            "vocal_url": f"http://127.0.0.1:8000/audio/{master_path.name}",
+                            "music_url": f"http://127.0.0.1:8000/audio/{master_path.name}",
+                            "duration": duration,
+                            "lines": [{"text": l, "start_time": round(i*line_dur, 1), "end_time": round((i+1)*line_dur, 1)} for i, l in enumerate(cleaned_lines)],
+                            "message": "100% Free Full Master Song Synthesized on Google Colab NVIDIA T4 GPU!"
+                        }
+        except Exception as e:
+            print(f"Colab GPU Engine error: {e}. Falling back to local pipeline...")
+
 
     lower_lyrics = req.lyrics.lower()
     if "tere naam" in lower_lyrics or "tere_naam" in lower_lyrics:
