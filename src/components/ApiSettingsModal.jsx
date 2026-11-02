@@ -15,7 +15,12 @@ import {
   Sparkles,
   Radio,
   Sliders,
-  CheckCircle2
+  CheckCircle2,
+  Music,
+  Key,
+  Eye,
+  EyeOff,
+  Globe
 } from 'lucide-react';
 
 export default function ApiSettingsModal({ 
@@ -26,7 +31,13 @@ export default function ApiSettingsModal({
 }) {
   const [activeTab, setActiveTab] = useState('engine'); // 'engine' | 'hardware' | 'master'
   const [colabUrl, setColabUrl] = useState(currentColabUrl || '');
-  const [activeProvider, setActiveProvider] = useState('colab'); // 'colab' | 'local'
+  const [activeProvider, setActiveProvider] = useState('suno'); // 'suno' | 'colab' | 'local'
+  const [sunoApiKey, setSunoApiKey] = useState('');
+  const [sunoBaseUrl, setSunoBaseUrl] = useState('https://api.goapi.ai');
+  const [sunoProvider, setSunoProvider] = useState('goapi');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [testingSuno, setTestingSuno] = useState(false);
+  const [sunoStatus, setSunoStatus] = useState(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -41,6 +52,12 @@ export default function ApiSettingsModal({
     if (savedProvider) {
       setActiveProvider(savedProvider);
     }
+    const savedSunoKey = localStorage.getItem('sonara_suno_api_key');
+    if (savedSunoKey) setSunoApiKey(savedSunoKey);
+    const savedSunoUrl = localStorage.getItem('sonara_suno_base_url');
+    if (savedSunoUrl) setSunoBaseUrl(savedSunoUrl);
+    const savedSunoProv = localStorage.getItem('sonara_suno_provider');
+    if (savedSunoProv) setSunoProvider(savedSunoProv);
   }, []);
 
   if (!isOpen) return null;
@@ -95,9 +112,46 @@ export default function ApiSettingsModal({
     }
   };
 
+  const testSunoConnection = async () => {
+    if (!sunoApiKey.trim()) {
+      setSunoStatus({ ok: false, msg: 'Please enter your Suno / GoAPI key' });
+      return;
+    }
+    setTestingSuno(true);
+    setSunoStatus(null);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/test-suno-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: sunoApiKey.trim(),
+          base_url: sunoBaseUrl.trim(),
+          provider: sunoProvider
+        })
+      });
+      const data = await res.json();
+      setSunoStatus({
+        ok: data.ok,
+        msg: data.message
+      });
+      if (data.ok) {
+        localStorage.setItem('sonara_suno_api_key', sunoApiKey.trim());
+        localStorage.setItem('sonara_suno_base_url', sunoBaseUrl.trim());
+        localStorage.setItem('sonara_suno_provider', sunoProvider);
+      }
+    } catch (err) {
+      setSunoStatus({ ok: false, msg: 'Backend check timed out. Verify backend is running.' });
+    } finally {
+      setTestingSuno(false);
+    }
+  };
+
   const handleSave = () => {
     const cleanUrl = colabUrl.trim().replace(/\/$/, '');
     localStorage.setItem('sonara_colab_url', cleanUrl);
+    localStorage.setItem('sonara_suno_api_key', sunoApiKey.trim());
+    localStorage.setItem('sonara_suno_base_url', sunoBaseUrl.trim());
+    localStorage.setItem('sonara_suno_provider', sunoProvider);
     localStorage.setItem('sonara_active_engine', activeProvider);
     if (onSaveColabUrl) {
       onSaveColabUrl(cleanUrl);
@@ -173,7 +227,32 @@ export default function ApiSettingsModal({
             <div className="settings-tab-pane animate-fadeIn">
               {/* Strategy Cards */}
               <div className="settings-engine-grid">
-                {/* 1. Google Colab GPU */}
+                {/* 1. Suno AI v3.5/v4 Neural Audio Engine */}
+                <div 
+                  className={`engine-mode-card ${activeProvider === 'suno' ? 'selected' : ''}`}
+                  onClick={() => setActiveProvider('suno')}
+                >
+                  <div className="engine-card-top">
+                    <div className="engine-radio-ring">
+                      <div className={`engine-radio-dot ${activeProvider === 'suno' ? 'active' : ''}`} />
+                    </div>
+                    <div className="engine-title-wrap">
+                      <h4 className="engine-card-title">Suno AI v3.5 / v4 Neural Engine (Cloud)</h4>
+                      <div className="engine-badges-row">
+                        <span className="badge-gemini-green">
+                          <span className="pulse-dot green" /> ★ Recommended
+                        </span>
+                        <span className="badge-gemini-red">100% Real Singing</span>
+                        <span className="badge-gemini-subtle">Full Live Band</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="engine-card-desc">
+                    Generates commercial studio songs with authentic human singing (Udit Narayan, Alka Yagnik, Arijit style), rich chord progressions, live guitars, drums, bass, and professional mastering in seconds.
+                  </p>
+                </div>
+
+                {/* 2. Google Colab GPU */}
                 <div 
                   className={`engine-mode-card ${activeProvider === 'colab' ? 'selected' : ''}`}
                   onClick={() => setActiveProvider('colab')}
@@ -221,6 +300,117 @@ export default function ApiSettingsModal({
                   </p>
                 </div>
               </div>
+
+              {/* Suno Configuration Box (When Suno selected) */}
+              {activeProvider === 'suno' && (
+                <div className="colab-setup-card animate-fadeIn">
+                  <div className="colab-card-header">
+                    <div className="flex-center-gap">
+                      <Music size={18} className="text-red-primary" />
+                      <span className="colab-header-title">Suno AI Cloud Gateway Settings</span>
+                    </div>
+                    <a
+                      href="https://goapi.ai/suno-api"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="colab-ext-link"
+                    >
+                      <span>Get Suno API Key</span>
+                      <ExternalLink size={13} />
+                    </a>
+                  </div>
+
+                  <div className="colab-steps-grid">
+                    <div className="colab-step-item">
+                      <div className="step-num">1</div>
+                      <div className="step-text">
+                        <span>Select your preferred <strong>Suno Gateway Provider</strong>:</span>
+                        <div style={{ marginTop: '0.4rem' }}>
+                          <select 
+                            className="suno-provider-select"
+                            value={sunoProvider}
+                            onChange={(e) => {
+                              setSunoProvider(e.target.value);
+                              if (e.target.value === 'goapi') setSunoBaseUrl('https://api.goapi.ai');
+                            }}
+                            style={{
+                              background: '#140c10',
+                              color: '#fff',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              borderRadius: '8px',
+                              padding: '0.4rem 0.75rem',
+                              fontSize: '0.82rem',
+                              width: '100%',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="goapi">GoAPI Suno AI (Cloud Gateway - Recommended)</option>
+                            <option value="sunoapi">Suno-API Proxy (Self-Hosted / sunoapi.com)</option>
+                            <option value="replicate">Replicate YuE / MusicGen Model</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="colab-step-item">
+                      <div className="step-num">2</div>
+                      <div className="step-text">
+                        <span>Paste your <strong>API Key</strong> below. Key is stored locally & safely:</span>
+                        <div className="colab-input-group" style={{ marginTop: '0.4rem' }}>
+                          <div className="colab-input-icon">
+                            <Key size={16} />
+                          </div>
+                          <input
+                            type={showApiKey ? "text" : "password"}
+                            className="colab-url-input"
+                            placeholder="Enter your Suno / GoAPI Key..."
+                            value={sunoApiKey}
+                            onChange={(e) => setSunoApiKey(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="step-copy-btn"
+                            style={{ marginRight: '0.5rem' }}
+                            onClick={() => setShowApiKey(!showApiKey)}
+                            title={showApiKey ? "Hide Key" : "Show Key"}
+                          >
+                            {showApiKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          <button
+                            type="button"
+                            className="colab-test-btn"
+                            onClick={testSunoConnection}
+                            disabled={testingSuno}
+                          >
+                            {testingSuno ? (
+                              <>
+                                <Activity size={14} className="animate-spin text-red-primary" />
+                                <span>Verifying...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Zap size={14} />
+                                <span>Test Connection</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        {sunoStatus && (
+                          <div className={`connection-status-pill ${sunoStatus.ok ? 'success' : 'error'} animate-fadeIn`} style={{ marginTop: '0.65rem' }}>
+                            {sunoStatus.ok ? (
+                              <CheckCircle2 size={16} className="status-icon green" />
+                            ) : (
+                              <AlertCircle size={16} className="status-icon red" />
+                            )}
+                            <span className="status-text">{sunoStatus.msg}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Colab Configuration Box (When Colab selected) */}
               {activeProvider === 'colab' && (
@@ -435,7 +625,7 @@ export default function ApiSettingsModal({
           <div className="footer-status-tag">
             <span className="footer-tag-label">Active Mode:</span>
             <strong className="footer-tag-val">
-              {activeProvider === 'colab' ? 'Google Colab NVIDIA T4 GPU' : 'Local Melodic Studio Engine'}
+              {activeProvider === 'suno' ? 'Suno AI v3.5/v4 Neural Engine (100% Real Singing)' : (activeProvider === 'colab' ? 'Google Colab NVIDIA T4 GPU' : 'Local Melodic Studio Engine')}
             </strong>
           </div>
 

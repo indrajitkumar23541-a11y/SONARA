@@ -282,7 +282,9 @@ export default function App() {
       // 2. Synthesize Song with Selected Voice Avatar
       setGeneratingStep(`Synthesizing singing vocals with ${voiceProfile.name}...`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const activeEngine = localStorage.getItem('sonara_active_engine') || 'suno';
+      const timeoutMs = activeEngine === 'suno' ? 65000 : 30000;
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const songRes = await fetch('http://127.0.0.1:8000/api/generate-song', {
         method: 'POST',
@@ -296,7 +298,10 @@ export default function App() {
           voice_avatar_name: voiceProfile.name,
           voice_profile_id: voiceProfile.id,
           voice_gender: voiceProfile.voiceGender || 'male',
-          cloud_provider: selectedModel,
+          cloud_provider: activeEngine,
+          suno_api_key: localStorage.getItem('sonara_suno_api_key') || '',
+          suno_base_url: localStorage.getItem('sonara_suno_base_url') || 'https://api.goapi.ai',
+          suno_provider: localStorage.getItem('sonara_suno_provider') || 'goapi',
           vocal_tuning: 50,
           vocal_reverb: 40,
           enable_harmonies: true,
