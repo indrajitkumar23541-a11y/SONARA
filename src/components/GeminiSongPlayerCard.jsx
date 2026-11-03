@@ -32,6 +32,8 @@ export default function GeminiSongPlayerCard({
   const [musicVolume, setMusicVolume] = useState(0.85);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const karaokeScrollRef = useRef(null);
+  const activeLineRef = useRef(null);
 
   const displayLines = songData?.lines?.length
     ? songData.lines.map((l) => l.text)
@@ -40,10 +42,28 @@ export default function GeminiSongPlayerCard({
         .map((l) => l.trim())
         .filter((l) => l.length > 0 && !l.startsWith('['));
 
-  const currentLineIndex = Math.min(
-    displayLines.length - 1,
-    Math.floor((currentTime / Math.max(1, duration)) * displayLines.length)
-  );
+  const currentLineIndex = React.useMemo(() => {
+    if (songData?.lines && songData.lines.length > 0) {
+      const idx = songData.lines.findIndex((l, i) => {
+        const nextStart = songData.lines[i + 1]?.start_time ?? Infinity;
+        return currentTime >= l.start_time && currentTime < nextStart;
+      });
+      return idx !== -1 ? idx : Math.min(songData.lines.length - 1, Math.floor((currentTime / Math.max(1, duration)) * songData.lines.length));
+    }
+    return Math.min(
+      displayLines.length - 1,
+      Math.floor((currentTime / Math.max(1, duration)) * displayLines.length)
+    );
+  }, [currentTime, duration, songData, displayLines.length]);
+
+  useEffect(() => {
+    if (activeLineRef.current && isPlaying) {
+      activeLineRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }, [currentLineIndex, isPlaying]);
 
   useEffect(() => {
     if (songData) {
@@ -183,12 +203,13 @@ export default function GeminiSongPlayerCard({
           <span className="karaoke-sub-note">Live phrasing highlights in red</span>
         </div>
 
-        <div className="karaoke-lines-scroll">
+        <div className="karaoke-lines-scroll" ref={karaokeScrollRef}>
           {displayLines.map((line, idx) => {
             const isActive = idx === currentLineIndex && isPlaying;
             return (
               <p
                 key={idx}
+                ref={isActive ? activeLineRef : null}
                 className={`karaoke-line ${isActive ? 'active-singing-red' : ''}`}
               >
                 {isActive && <span className="red-arrow-indicator">▶</span>}

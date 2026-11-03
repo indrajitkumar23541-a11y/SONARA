@@ -318,7 +318,7 @@ export default function App() {
       const songData = await songRes.json();
       const finalSong = {
         ...songData,
-        title: songTitle,
+        title: songData.title || songTitle,
         voice_name: voiceProfile.name,
         timestamp: Date.now(),
       };
