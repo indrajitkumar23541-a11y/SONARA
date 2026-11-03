@@ -82,7 +82,7 @@ class ColabTestRequest(BaseModel):
 class SunoTestRequest(BaseModel):
     api_key: str
     base_url: Optional[str] = "https://api.goapi.ai"
-    provider: Optional[str] = "goapi" 
+    provider: Optional[str] = "goapi"
 
 
 class LyricsGenerationRequest(BaseModel):
@@ -107,7 +107,7 @@ def detect_language(text: str) -> str:
 # Melodic singing phoneme elongation & musical phrasing
 def melodic_vocal_stretch(speaker: str, text: str) -> str:
     t = text.strip()
-    
+
     # Female Aalaap styling (high sweet resonant alaap)
     if speaker.upper() == "FEMALE":
         if "la" in t.lower():
@@ -123,7 +123,7 @@ def melodic_vocal_stretch(speaker: str, text: str) -> str:
         if "tere naam" in t.lower():
             return "Teeereee naaaam ... "
         return t + " ... "
-        
+
     # Male Romantic Lead vocal styling (prolong key emotional vowels for true singing cadence)
     replacements = [
         (r"\bTere naam\b", "Teeereee naaaam"),
@@ -143,11 +143,11 @@ def melodic_vocal_stretch(speaker: str, text: str) -> str:
         (r"\bTere liye, tere liye\b", "Teeereee liyee ... teeereee liyee"),
         (r"\bis duniya ka har sitam hai gawaara sanam\b", "is duniyaaa kaaa har sitam haaai gawaaaaraaa sanam"),
     ]
-    
+
     transformed = t
     for pattern, repl in replacements:
         transformed = re.sub(pattern, repl, transformed, flags=re.I)
-        
+
     return transformed.rstrip(".") + " ... "
 
 
@@ -210,10 +210,10 @@ async def upload_voice_avatar(file: UploadFile = File(...)):
     try:
         user_avatar_wav = PUBLIC_AUDIO_DIR / "user_voice_avatar.wav"
         temp_input = PUBLIC_AUDIO_DIR / f"temp_upload_{int(time.time()*1000)}_{file.filename}"
-        
+
         with open(temp_input, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            
+
         cmd = [
             FFMPEG_EXE, "-y",
             "-i", str(temp_input),
@@ -227,7 +227,7 @@ async def upload_voice_avatar(file: UploadFile = File(...)):
                 temp_input.unlink()
             except Exception:
                 pass
-            
+
         return {
             "status": "success",
             "message": "User voice avatar calibrated & registered successfully!",
@@ -254,7 +254,7 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
         is_sad_l = any(k in prompt_lower for k in ["sad", "dard", "judai", "tuta", "roona", "tanha", "bichhad", "broken"])
         is_party_l = any(k in prompt_lower for k in ["party", "nacho", "dance", "club", "dhamaka", "dj", "edm"])
         is_bhajan_l = any(k in prompt_lower for k in ["bhajan", "bhakti", "shiva", "krishna", "ram", "prabhu", "mandir"])
-        
+
         genre_mapped = "bollywood"
         scale = "E Minor"
         mood_detected = "User Original Lyrics"
@@ -687,10 +687,10 @@ async def test_suno_connection(req: SunoTestRequest):
     """Verifies Suno API / GoAPI connectivity and account balance/status."""
     if not req.api_key or not req.api_key.strip():
         raise HTTPException(status_code=400, detail="API Key cannot be empty")
-        
+
     api_key = req.api_key.strip()
     base_url = (req.base_url or "https://api.goapi.ai").rstrip("/")
-    
+
     import httpx
     try:
         async with httpx.AsyncClient(timeout=12.0) as client:
@@ -945,7 +945,7 @@ async def generate_song(req: SongGenerationRequest):
     # 2. Check Suno AI Cloud Music Engine (if key configured)
     is_suno_requested = (
         req.cloud_provider == "suno" and (
-            bool(req.suno_api_key) or 
+            bool(req.suno_api_key) or
             bool(req.cloud_api_key) or
             bool(os.environ.get("SUNO_API_KEY"))
         )
@@ -1038,8 +1038,8 @@ async def generate_song(req: SongGenerationRequest):
     # 1. Voice Model Selection & Avatar Calibration
     user_avatar_path = PUBLIC_AUDIO_DIR / "user_voice_avatar.wav"
     is_user_avatar = (
-        req.voice_profile_id == "profile_user" or 
-        "custom" in req.voice_profile_id.lower() or 
+        req.voice_profile_id == "profile_user" or
+        "custom" in req.voice_profile_id.lower() or
         "user" in req.voice_profile_id.lower() or
         "avatar" in (req.voice_avatar_name or "").lower()
     )
@@ -1106,7 +1106,7 @@ async def generate_song(req: SongGenerationRequest):
                 shutil.copyfile(gen_path, str(studio_vocal_path))
                 duration = get_audio_duration(master_song_path) or 159.0
                 print(f"[{time.strftime('%X')}] ✓ DiffRhythm2 successfully generated full singing song ({duration:.1f}s)!")
-                
+
                 line_duration = duration / max(1, len(cleaned_lines))
                 timed_lines = [
                     {
