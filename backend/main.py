@@ -72,6 +72,7 @@ class SongGenerationRequest(BaseModel):
     suno_base_url: Optional[str] = "https://api.goapi.ai"
     suno_provider: Optional[str] = "goapi"
     colab_url: Optional[str] = DEFAULT_COLAB_URL
+    hf_token: Optional[str] = None
 
 
 class ColabTestRequest(BaseModel):
@@ -1021,7 +1022,8 @@ async def generate_song(req: SongGenerationRequest):
             print(f"[{time.strftime('%X')}] 🎵 Calling DiffRhythm2 Neural Music Engine ({style_prompt[:40]}...)...\n")
 
             def _call_diffrhythm():
-                hf_client = Client("ASLP-lab/DiffRhythm2")
+                hf_token_val = req.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+                hf_client = Client("ASLP-lab/DiffRhythm2", hf_token=hf_token_val)
                 return hf_client.predict(
                     lrc=formatted_lrc,
                     audio_prompt=audio_prompt_arg,
@@ -1070,13 +1072,8 @@ async def generate_song(req: SongGenerationRequest):
         except Exception as e:
             print(f"[{time.strftime('%X')}] DiffRhythm2 note ({e}). Continuing with Dynamic Studio Synthesis Engine...")
 
-    # --- SECONDARY ENGINE: Ultra-Fast Melodic Vocal & Acoustic Studio Pipeline (~3 seconds) ---
-    # High-Speed Parallel Vocal Synthesis (Parallel edge_tts coroutines: ~1.5s total)
-    raag_pitch_offsets = [12, 28, 42, 16, 24, 38, 14, 8]
-
+    # --- SECONDARY ENGINE: Ultra-Fast Clean Melodic Studio Pipeline ---
     async def _synth_single_line(idx, line_text):
-        semitone_offset = raag_pitch_offsets[idx % len(raag_pitch_offsets)]
-        line_pitch = f"+{semitone_offset}Hz"
         line_audio = PUBLIC_AUDIO_DIR / f"tmp_line_{timestamp}_{idx}.mp3"
 
         lower_line = line_text.lower()
@@ -1086,19 +1083,18 @@ async def generate_song(req: SongGenerationRequest):
 
         if is_both:
             cleaned_text = re.sub(r"^(\[both\]|\(both\)|\[duet\]|\(duet\)|both:|duet:|--both--)\s*", "", line_text, flags=re.IGNORECASE)
-            singing_text = melodic_vocal_stretch("MALE", cleaned_text)
             male_v = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
             female_v = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
             f_m = PUBLIC_AUDIO_DIR / f"tmp_m_{timestamp}_{idx}.mp3"
             f_f = PUBLIC_AUDIO_DIR / f"tmp_f_{timestamp}_{idx}.mp3"
-            c_m = edge_tts.Communicate(text=singing_text, voice=male_v, rate="-20%", pitch=f"+{semitone_offset}Hz")
-            c_f = edge_tts.Communicate(text=singing_text, voice=female_v, rate="-24%", pitch=f"+{semitone_offset+18}Hz")
+            c_m = edge_tts.Communicate(text=cleaned_text, voice=male_v, rate="-6%", pitch="+4Hz")
+            c_f = edge_tts.Communicate(text=cleaned_text, voice=female_v, rate="-6%", pitch="+12Hz")
             await asyncio.gather(c_m.save(str(f_m)), c_f.save(str(f_f)))
             try:
                 cmd_mix = [
                     FFMPEG_EXE, "-y",
                     "-i", str(f_m), "-i", str(f_f),
-                    "-filter_complex", "amix=inputs=2:duration=longest:weights=1 1",
+                    "-filter_complex", "amix=inputs=2:duration=longest:weights=1 0.9",
                     str(line_audio)
                 ]
                 subprocess.run(cmd_mix, check=True)
@@ -1110,27 +1106,21 @@ async def generate_song(req: SongGenerationRequest):
                 except Exception: pass
             return (idx, line_audio)
 
-        speaker_tag = "MALE"
         line_voice = voice_name
-        line_rate = "-20%"
+        line_rate = "-6%"
+        line_pitch = "+4Hz"
         cleaned_text = line_text
         if is_female:
-            speaker_tag = "FEMALE"
             line_voice = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
-            line_rate = "-24%"
-            line_pitch = f"+{semitone_offset + 22}Hz" # Higher harmonic register for female aalaap
+            line_pitch = "+10Hz"
             cleaned_text = re.sub(r"^(\[female\]|\(female\)|\[f\]|\(f\)|female:|ladki:|\[ladki\]|--female--)\s*", "", line_text, flags=re.IGNORECASE)
         elif is_male:
-            speaker_tag = "MALE"
             line_voice = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
-            line_rate = "-20%"
+            line_pitch = "+4Hz"
             cleaned_text = re.sub(r"^(\[male\]|\(male\)|\[m\]|\(m\)|male:|ladka:|\[ladka\]|--male--)\s*", "", line_text, flags=re.IGNORECASE)
 
-        # Apply true singing vowel elongation and emotional phrasing
-        singing_text = melodic_vocal_stretch(speaker_tag, cleaned_text)
-
         comm = edge_tts.Communicate(
-            text=singing_text,
+            text=cleaned_text,
             voice=line_voice,
             rate=line_rate,
             pitch=line_pitch
@@ -1143,7 +1133,6 @@ async def generate_song(req: SongGenerationRequest):
     line_results.sort(key=lambda x: x[0])
     temp_line_files = [res[1] for res in line_results]
 
-    # Concat line tracks into continuous vocal
     concat_manifest = PUBLIC_AUDIO_DIR / f"concat_{timestamp}.txt"
     with open(concat_manifest, "w", encoding="utf-8") as f:
         for tf in temp_line_files:
@@ -1157,31 +1146,21 @@ async def generate_song(req: SongGenerationRequest):
     ]
     subprocess.run(cmd_concat, check=True)
 
-    # Clean temporary line files
     for tf in temp_line_files:
         try:
-            if tf.exists():
-                tf.unlink()
-        except Exception:
-            pass
+            if tf.exists(): tf.unlink()
+        except Exception: pass
     try:
-        if concat_manifest.exists():
-            concat_manifest.unlink()
-    except Exception:
-        pass
+        if concat_manifest.exists(): concat_manifest.unlink()
+    except Exception: pass
 
-    # Vocal Processing: Intro Delay (3.5s) + Chest Warmth + Presence EQ + Stereo Double Tracking + Studio Plate Reverb
-    reverb_decay = max(0.25, min(0.65, req.vocal_reverb / 100.0))
+    # Clean Studio Vocal Processing (Warm EQ + Natural Acoustic Reverb - NO wild vibrato)
     vocal_filter = (
-        "adelay=3800|3800,"
-        "vibrato=f=5.2:d=0.22,"
-        "equalizer=f=260:t=q:w=1.2:g=4.2,"
-        "equalizer=f=3300:t=q:w=1.2:g=3.8,"
-        "equalizer=f=11500:t=q:w=1:g=2.8,"
-        "equalizer=f=600:t=q:w=1.5:g=-2.4,"
-        "chorus=0.7:0.85:55:0.4:0.25:2,"
-        f"aecho=0.8:0.75:65:{reverb_decay},"
-        "acompressor=threshold=-14dB:ratio=3.2:attack=12:release=220"
+        "adelay=1200|1200,"
+        "equalizer=f=260:t=q:w=1.0:g=2.2,"
+        "equalizer=f=3400:t=q:w=1.2:g=2.8,"
+        "aecho=0.8:0.35:35:0.18,"
+        "acompressor=threshold=-12dB:ratio=2.5:attack=10:release=180"
     )
     cmd_lead = [
         FFMPEG_EXE, "-y", "-i", str(raw_vocal_path),
@@ -1191,57 +1170,39 @@ async def generate_song(req: SongGenerationRequest):
     ]
     subprocess.run(cmd_lead, check=True)
 
-    # Feature 1: Auto-Harmonizer & Double Tracking (+3 semitones pitch shift + stereo chorus)
+    # In-Sync Stereo Doubler (Haas Effect 18ms delay - 100% synchronized words, NO asetrate speed shift!)
     if req.enable_harmonies:
-        harmony_filter = (
-            "asetrate=44100*1.045,aresample=44100,"
-            "chorus=0.7:0.9:50:0.4:0.25:2,"
-            "volume=0.45"
-        )
-        cmd_harmony = [
+        stereo_doubler = "asplit=2[l][r];[r]adelay=18|18[r_del];[l][r_del]amix=inputs=2:weights=1 0.65"
+        cmd_double = [
             FFMPEG_EXE, "-y", "-i", str(lead_vocal_path),
-            "-af", harmony_filter,
+            "-af", stereo_doubler,
             "-ar", "44100", "-b:a", "192k",
-            str(harmony_vocal_path)
+            str(studio_vocal_path)
         ]
         try:
-            subprocess.run(cmd_harmony, check=True)
-            cmd_combine_vocals = [
-                FFMPEG_EXE, "-y",
-                "-i", str(lead_vocal_path),
-                "-i", str(harmony_vocal_path),
-                "-filter_complex", "[0:a]volume=1.0[v1];[1:a]volume=0.45[v2];[v1][v2]amix=inputs=2:duration=first",
-                "-ar", "44100", "-b:a", "192k",
-                str(studio_vocal_path)
-            ]
-            subprocess.run(cmd_combine_vocals, check=True)
+            subprocess.run(cmd_double, check=True)
         except Exception:
             studio_vocal_path = lead_vocal_path
     else:
         studio_vocal_path = lead_vocal_path
 
-    # Clean raw temp files
     for p in [raw_vocal_path, harmony_vocal_path]:
         if os.path.exists(p) and p != studio_vocal_path:
-            try:
-                os.remove(p)
-            except Exception:
-                pass
+            try: os.remove(p)
+            except Exception: pass
 
-    # Feature 4 & 5: Acoustic Stems + Sidechain Vocal Ducking & -14 LUFS Mastering
+    # Backing track mixing with broadcast -14 LUFS mastering
     backing_file = PUBLIC_AUDIO_DIR / f"backing_{req.genre_id}.mp3"
     if not backing_file.exists():
         backing_file = PUBLIC_AUDIO_DIR / "backing_bollywood.mp3"
 
     try:
-        # Dynamic sidechain ducking and EBU R128 (-14 LUFS) broadcast mastering
-        # dropout_transition=3 ensures smooth acoustic tail and fadeout
-        duck_vol = "0.68" if req.enable_sidechain else "0.82"
+        duck_vol = "0.72" if req.enable_sidechain else "0.85"
         mix_filters = (
-            "[0:a]volume=1.45[v];"
+            "[0:a]volume=1.35[v];"
             f"[1:a]volume={duck_vol}[m];"
-            "[v][m]amix=inputs=2:duration=first:dropout_transition=4,"
-            "loudnorm=I=-14:TP=-1.5:LRA=11"
+            "[v][m]amix=inputs=2:duration=first:dropout_transition=3,"
+            "loudnorm=I=-14:TP=-1.5:LRA=10"
         )
         cmd_mix = [
             FFMPEG_EXE, "-y",
@@ -1259,13 +1220,13 @@ async def generate_song(req: SongGenerationRequest):
 
     exact_duration = get_audio_duration(master_song_path if master_song_path.exists() else studio_vocal_path)
 
-    # Timed karaoke lines with intro offset (3.5s intro)
+    # Timed karaoke lines matching 1.2s acoustic guitar intro
     timed_lines = []
-    effective_vocal_duration = max(5.0, exact_duration - 4.5)
+    effective_vocal_duration = max(5.0, exact_duration - 1.8)
     line_duration = effective_vocal_duration / max(1, len(cleaned_lines))
     for i, line in enumerate(cleaned_lines):
-        start_t = round(3.5 + (i * line_duration), 1)
-        end_t = round(3.5 + ((i + 1) * line_duration), 1)
+        start_t = round(1.2 + (i * line_duration), 1)
+        end_t = round(1.2 + ((i + 1) * line_duration), 1)
         timed_lines.append({
             "text": line,
             "start_time": start_t,
