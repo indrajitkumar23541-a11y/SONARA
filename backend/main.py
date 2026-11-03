@@ -49,7 +49,7 @@ else:
         FFMPEG_EXE = shutil.which("ffmpeg") or "ffmpeg"
 
 
-DEFAULT_COLAB_URL = os.environ.get("SONARA_COLAB_URL", "https://acres-airlines-ball-reductions.trycloudflare.com")
+DEFAULT_COLAB_URL = os.environ.get("SONARA_COLAB_URL", "https://exports-number-unlock-method.trycloudflare.com")
 
 
 class SongGenerationRequest(BaseModel):
