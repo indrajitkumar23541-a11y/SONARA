@@ -280,22 +280,111 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "line_count": len([l for l in raw_lines if not l.startswith("[")])
         }
 
-    # 2. Intelligent Theme & Concept Detection from Prompt
+# 2. Intelligent Language & Theme Detection from Prompt
+    is_english_explicit = any(k in prompt_lower for k in [
+        "english", "eng", "western", "hollywood", "bieber", "justin", "jisten",
+        "bebber", "taylor", "sheeran", "pop song", "english song", "american",
+        "in english", "billie", "charlie puth", "shawn mendes", "bruno mars"
+    ])
+    english_keywords = ["generate", "write", "create", "song", "romantic", "like", "singer", "about", "love", "sad", "party", "acoustic", "pop"]
+    eng_matches = sum(1 for w in english_keywords if w in prompt_lower)
+    hindi_indicators = ["karo", "bnao", "mujhe", "tera", "meri", "hum", "tum", "dil", "pyar", "ishq", "gana", "geet", "chahiye", "ek", "saath", "wali", "wala", "jaisa"]
+    has_hindi_words = any(h in prompt_lower.split() or f" {h} " in f" {prompt_lower} " for h in hindi_indicators)
+    is_english = is_english_explicit or (eng_matches >= 3 and not has_hindi_words)
+
+    # Specific sub-genre / mood detection
     is_rain = any(k in prompt_lower for k in ["barish", "rain", "barsaat", "boondein", "monsoon", "badal"])
-    is_sad = any(k in prompt_lower for k in ["sad", "dard", "judai", "tuta", "roona", "tanha", "bichhad", "broken", "heartbreak"])
-    is_party = any(k in prompt_lower for k in ["party", "nacho", "dance", "club", "dhamaka", "jashn", "dj", "masti", "edm", "beat"])
+    is_sad = any(k in prompt_lower for k in ["sad", "dard", "judai", "tuta", "roona", "tanha", "bichhad", "broken", "heartbreak", "crying", "alone"])
+    is_party = any(k in prompt_lower for k in ["party", "nacho", "dance", "club", "dhamaka", "jashn", "dj", "masti", "edm", "beat", "punjabi"])
     is_bhajan = any(k in prompt_lower for k in ["bhajan", "bhakti", "shiva", "krishna", "ram", "prabhu", "mandir", "sukoon", "peace", "sufi"])
     is_dosti = any(k in prompt_lower for k in ["dosti", "yaar", "friend", "dost", "yaari", "college", "school"])
     is_birthday = any(k in prompt_lower for k in ["birthday", "janamdin", "mubarak", "badhai"])
-    is_lori = any(k in prompt_lower for k in ["lori", "chanda", "soja", "bachha", "nindiya", "raat"])
-    is_love = any(k in prompt_lower for k in ["love", "pyar", "ishq", "mohabbat", "romantic", "romance", "sanam", "dil"])
     is_duet = any(k in prompt_lower for k in ["duet", "duwet", "couple", "two singers", "male and female", "ladka ladki"])
+    is_retro_udit = any(k in prompt_lower for k in ["udit", "retro", "90s", "purana", "kumar sanu", "alka", "alka yagnik"])
 
-    # Extract clean topic title
-    first_phrase = prompt_raw.split(".")[0].split(",")[0]
-    title = first_phrase[:35].strip().title()
-
-    if is_duet:
+    # 3. Branch: English Songs (Justin Bieber, Pop, Acoustic, etc.)
+    if is_english:
+        if is_sad:
+            title = "Empty Spaces (Acoustic Ballad)"
+            genre_mapped = "acoustic"
+            scale = "A Minor"
+            mood_detected = "English Soulful Melancholy"
+            lyrics = (
+                "[Verse 1]\n"
+                "Rain is falling quietly against my windowpane\n"
+                "Every passing second whispers echoes of your name\n"
+                "Looking at the photographs we took a year ago\n"
+                "Watching all the colors fade into the falling snow\n\n"
+                "[Chorus]\n"
+                "Now there's only empty spaces everywhere I go\n"
+                "Trying to move forward but the days are moving slow\n"
+                "How do I forget the love we used to call our own\n"
+                "Standing in the shadows of this quiet room alone\n\n"
+                "[Verse 2]\n"
+                "Walking down the empty street where we used to run\n"
+                "Watching all the golden light fading from the sun\n"
+                "I just hope you found the peace you were looking for\n"
+                "Even though I'll never hear you knocking at my door\n\n"
+                "[Outro]\n"
+                "Whispers in the quiet night fading far away\n"
+                "Wishing for the love we lost, wishing you could stay"
+            )
+        elif is_party:
+            title = "Light Up The Night (Club Mix)"
+            genre_mapped = "pop"
+            scale = "A Minor"
+            mood_detected = "English High-Energy Dance Pop"
+            lyrics = (
+                "[Verse 1]\n"
+                "Friday night is calling and the neon lights are bright\n"
+                "Bass is pumping louder and the energy is right\n"
+                "Turn the volume all the way we're stepping on the floor\n"
+                "Tonight we're living higher than we ever did before\n\n"
+                "[Chorus]\n"
+                "Light up the night let the music take control\n"
+                "Feel that heavy rhythm down deep inside your soul\n"
+                "Hands up in the air let your worries fade away\n"
+                "We're gonna keep on dancing till the break of day\n\n"
+                "[Verse 2]\n"
+                "DJ drop the beat and let the synthesizer roll\n"
+                "Sonic waves of melody are making everybody whole\n"
+                "No looking in the mirror nothing holding back our speed\n"
+                "This electric feeling is the only thing we need\n\n"
+                "[Outro]\n"
+                "Keep it moving don't stop let the speakers shake\n"
+                "Best night of our lives that we're never gonna break"
+            )
+        else:
+            # Justin Bieber / Pop Romance / Acoustic Love Pop
+            title = "Stay With Me (Acoustic Pop)"
+            genre_mapped = "pop"
+            scale = "C Major"
+            mood_detected = "English Acoustic Pop (Bieber Style)"
+            lyrics = (
+                "[Verse 1]\n"
+                "Walking down the avenue under neon lights\n"
+                "Thinking 'bout the way you held me through the coldest nights\n"
+                "Every little heartbeat whispers out your name\n"
+                "Nothing feels the same without you in this crazy game\n\n"
+                "[Chorus]\n"
+                "Baby won't you stay right by my side tonight\n"
+                "Everything is golden when you hold me tight\n"
+                "Never let you go you're the melody in my soul\n"
+                "Forever with you darling making my heart whole\n\n"
+                "[Verse 2]\n"
+                "Caught up in the rhythm of your sweet guitar\n"
+                "No matter where you wander no matter how far\n"
+                "You're the shining star that guides me through the dark\n"
+                "Lighting up the world with just a single spark\n\n"
+                "[Outro]\n"
+                "Yeah baby stay with me until the morning sun\n"
+                "With you my girl my life has just begun"
+            )
+    elif is_duet:
+        title = "Humsafar Ki Dastaan (Duet)"
+        genre_mapped = "bollywood"
+        scale = "E Minor"
+        mood_detected = "Soulful Bollywood Duet"
         lyrics = (
             "[Intro - Flute & Acoustic Strings]\n"
             "[Male] Teri aankhon ki gehraiyon me kho gaya hoon\n"
@@ -320,9 +409,36 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "[Female] Tujhme hi toh basti hai meri ye mehfil\n"
             "[Both] Ab har janam me chahiye tera hi sath"
         )
-        mood_detected = "Soulful Bollywood Duet"
-        scale = "E Minor"
+    elif is_retro_udit:
+        title = "Khushboo Sanam Ki (90s Classic)"
+        genre_mapped = "bollywood"
+        scale = "D Major"
+        mood_detected = "90s Bollywood Golden Melody"
+        lyrics = (
+            "[Verse 1]\n"
+            "Khushboo teri hawaon me ghulne lagi sanam\n"
+            "Tere bina adhoora tha har ek mera kadam\n"
+            "Aankhon me bas gaya hai tera hi ye noor\n"
+            "Tujhse juda hoke hum kaise rahein door\n\n"
+            "[Chorus]\n"
+            "Ye dil deewaana hai tere pyaar ka maara\n"
+            "Tu hi mera aasmaan tu hi mera sitaara\n"
+            "Chori chori chupke se tune jo dekha hai\n"
+            "Hathon ki laqeeron me rab ne tujhe likha hai\n\n"
+            "[Verse 2]\n"
+            "Goonjti hai baansuri fizaon me har taraf\n"
+            "Dhadkanein pukaarein tujhe bas ek hi taraf\n"
+            "Mausam suhana hai aur paas hai sanam\n"
+            "Khatam na ho kabhi ye pyaar ka karam\n\n"
+            "[Outro]\n"
+            "Salamat rahe ye chahat sadiyon talak yahan\n"
+            "Tu hi meri manzil tu hi mera jahan"
+        )
     elif is_rain:
+        title = "Barish Ki Boondein"
+        genre_mapped = "bollywood"
+        scale = "E Minor"
+        mood_detected = "Monsoon Romance"
         lyrics = (
             "[Verse 1]\n"
             "Barish ki bheege boondein geet sunaayein\n"
@@ -343,9 +459,11 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "Bheegi hawayein keh rahi bas ek hi baat\n"
             "Zindagi bhar ka chahiye tera hi sath"
         )
-        mood_detected = "Monsoon Romance"
-        scale = "E Minor"
     elif is_sad:
+        title = "Viraniyan (Soulful Melancholy)"
+        genre_mapped = "bollywood"
+        scale = "C# Minor"
+        mood_detected = "Soulful Melancholy"
         lyrics = (
             "[Verse 1]\n"
             "Ruk si gayi hai zindagi tere jaane ke baad\n"
@@ -366,9 +484,11 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "Dua me yahi mangte hain teri khushi\n"
             "Bhale hi meri kismat me ho ab bekasi"
         )
-        mood_detected = "Soulful Melancholy"
-        scale = "C# Minor"
     elif is_party:
+        title = "Sonara Club Anthem"
+        genre_mapped = "pop"
+        scale = "A Minor"
+        mood_detected = "High-Energy Anthem"
         lyrics = (
             "[Verse 1]\n"
             "Bass badha do DJ wale aayi hai shaam\n"
@@ -389,9 +509,11 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "Party chalegi till the morning light\n"
             "Sonara ke sath everyday is right!"
         )
-        mood_detected = "High-Energy Anthem"
-        scale = "A Minor"
     elif is_bhajan:
+        title = "Prabhu Kripa Bhajan"
+        genre_mapped = "classical"
+        scale = "C Major"
+        mood_detected = "Spiritual Devotion"
         lyrics = (
             "[Verse 1]\n"
             "Subah ki pehli kiran me tera hi noor hai\n"
@@ -412,9 +534,11 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "Om shanti om shanti goonje har dishayein\n"
             "Sabka kalyan ho sabki manokamna pur ho jaaye"
         )
-        mood_detected = "Spiritual Devotion"
-        scale = "C Major (Bhairav)"
     elif is_dosti:
+        title = "Yaari Ka Jashn"
+        genre_mapped = "pop"
+        scale = "G Major"
+        mood_detected = "True Friendship"
         lyrics = (
             "[Verse 1]\n"
             "Yaar bina ye zindagi jaise bina chai ki shaam\n"
@@ -435,9 +559,11 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "Cheers to our friendship salamat rahe ye dosti\n"
             "Zindagi bhar chalti rahe ye pyari dosti"
         )
-        mood_detected = "True Friendship"
-        scale = "G Major"
     elif is_birthday:
+        title = "Janamdin Mubarak"
+        genre_mapped = "pop"
+        scale = "D Major"
+        mood_detected = "Birthday Celebration"
         lyrics = (
             "[Verse 1]\n"
             "Aaya hai janamdin khushiyon ka ye din\n"
@@ -453,14 +579,16 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "Mubarak ho janamdin mubarak ho ye din\n"
             "Goonje yahi aawaz aaj raat din"
         )
-        mood_detected = "Birthday Celebration"
-        scale = "D Major"
     else:
-        # Universal Soulful Bollywood Romantic Composition personalized to the prompt
+        # Soulful Bollywood Romance (Arijit Singh / Heartfelt Romantic)
+        title = "Pehli Nazar Ki Dastaan"
+        genre_mapped = "bollywood"
+        scale = "E Minor"
+        mood_detected = "Soulful Bollywood Romance"
         lyrics = (
             "[Verse 1]\n"
-            f"Tere khayalon me kho gaya hai mera ye jahan\n"
-            f"{prompt_raw[:40]} ki tarah tu aayi meri jaan\n"
+            "Tere khayalon me kho gaya hai mera ye jahan\n"
+            "Pehli nazar me hi ban gayi tu meri dastaan\n"
             "Dheere se chhua jo hawa ne laga tu paas hai\n"
             "Tere bina ye dil mera kitna udaas hai\n\n"
             "[Chorus]\n"
@@ -477,8 +605,6 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
             "Tu hai toh hai jannat tu hai toh sab sahi\n"
             "Meri har khushi bas tujhme hi basi"
         )
-        mood_detected = "Bollywood Romantic"
-        scale = "E Minor"
 
     return {
         "status": "success",
@@ -486,10 +612,10 @@ async def generate_lyrics_from_prompt(req: LyricsGenerationRequest):
         "prompt": prompt_raw,
         "lyrics": lyrics,
         "mood": mood_detected,
+        "genre": genre_mapped,
         "recommended_scale": scale,
         "line_count": len([l for l in lyrics.splitlines() if l.strip() and not l.startswith("[")])
     }
-
 
 
 # ============================================================================
@@ -871,105 +997,78 @@ async def generate_song(req: SongGenerationRequest):
     studio_vocal_path = PUBLIC_AUDIO_DIR / f"vocal_{req.genre_id}_{timestamp}.mp3"
     master_song_path = PUBLIC_AUDIO_DIR / f"master_{req.genre_id}_{timestamp}.mp3"
 
-    # --- PRIMARY ENGINE: DiffRhythm2 Neural Foundation (Suno AI-grade real human singing & band) ---
-    try:
-        from gradio_client import Client
-        formatted_lrc = "[start]\n[intro]\n[verse]\n" + "\n".join(cleaned_lines[:4])
-        if len(cleaned_lines) > 4:
-            formatted_lrc += "\n[chorus]\n" + "\n".join(cleaned_lines[4:8])
-        formatted_lrc += "\n[outro]"
+# Check if DiffRhythm2 Neural Foundation is explicitly requested
+    if req.cloud_provider == "diffrhythm" or os.environ.get("ENABLE_DIFFRHYTHM") == "1":
+        try:
+            from gradio_client import Client
+            formatted_lrc = "[start]\n[intro]\n[verse]\n" + "\n".join(cleaned_lines[:4])
+            if len(cleaned_lines) > 4:
+                formatted_lrc += "\n[chorus]\n" + "\n".join(cleaned_lines[4:8])
+            formatted_lrc += "\n[outro]"
 
-        gender_str = "female" if req.voice_gender == "female" else "male"
-        g_lower = (req.genre_id or "bollywood").lower()
-        if "pop" in g_lower or "dance" in g_lower or "party" in g_lower:
-            style_prompt = f"Bollywood dance party anthem, energetic 808 bass, punchy drums, synthesizer, {gender_str} singing, 128 bpm, studio master"
-        elif "classical" in g_lower or "sufi" in g_lower or "bhajan" in g_lower:
-            style_prompt = f"Indian classical sufi devotional, raag yaman, harmonium, tabla, {gender_str} singing voice, emotional acoustic strings, studio master"
-        elif "sad" in g_lower or "dard" in g_lower:
-            style_prompt = f"Soulful Hindi melancholy ballad, heartfelt expressive {gender_str} singing, piano, cello, sad strings, 75 bpm, emotional master"
-        else:
-            style_prompt = f"Bollywood romantic acoustic, soulful emotional {gender_str} singing voice, sweet bansuri flute, acoustic guitar, soft strings, tabla, 85 bpm, studio master"
+            gender_str = "female" if req.voice_gender == "female" else "male"
+            g_lower = (req.genre_id or "bollywood").lower()
+            if "pop" in g_lower or "dance" in g_lower or "party" in g_lower:
+                style_prompt = f"Pop dance party anthem, energetic 808 bass, punchy drums, synthesizer, {gender_str} singing, 128 bpm, studio master"
+            elif "classical" in g_lower or "sufi" in g_lower or "bhajan" in g_lower:
+                style_prompt = f"Indian classical sufi devotional, raag yaman, harmonium, tabla, {gender_str} singing voice, emotional acoustic strings, studio master"
+            elif "sad" in g_lower or "dard" in g_lower:
+                style_prompt = f"Soulful melancholy ballad, heartfelt expressive {gender_str} singing, piano, cello, sad strings, 75 bpm, emotional master"
+            else:
+                style_prompt = f"Soulful romantic acoustic, emotional {gender_str} singing voice, sweet acoustic guitar, soft strings, 85 bpm, studio master"
 
-        audio_prompt_arg = str(user_avatar_path) if has_custom_avatar_file else None
-        print(f"[{time.strftime('%X')}] 🎵 Calling DiffRhythm2 Neural Music Engine ({style_prompt[:40]}...)...")
+            audio_prompt_arg = str(user_avatar_path) if has_custom_avatar_file else None
+            print(f"[{time.strftime('%X')}] 🎵 Calling DiffRhythm2 Neural Music Engine ({style_prompt[:40]}...)...\n")
 
-        def _call_diffrhythm():
-            hf_client = Client("ASLP-lab/DiffRhythm2")
-            return hf_client.predict(
-                lrc=formatted_lrc,
-                audio_prompt=audio_prompt_arg,
-                text_prompt=style_prompt,
-                seed=random.randint(1, 99999),
-                randomize_seed=True,
-                steps=16,
-                cfg_strength=1.3,
-                file_type="mp3",
-                odeint_method="euler",
-                api_name="/infer_music"
+            def _call_diffrhythm():
+                hf_client = Client("ASLP-lab/DiffRhythm2")
+                return hf_client.predict(
+                    lrc=formatted_lrc,
+                    audio_prompt=audio_prompt_arg,
+                    text_prompt=style_prompt,
+                    seed=random.randint(1, 99999),
+                    randomize_seed=True,
+                    steps=16,
+                    cfg_strength=1.3,
+                    file_type="mp3",
+                    odeint_method="euler",
+                    api_name="/infer_music"
+                )
+
+            gen_path = await asyncio.wait_for(
+                asyncio.to_thread(_call_diffrhythm),
+                timeout=15.0
             )
 
-        gen_path = await asyncio.wait_for(
-            asyncio.to_thread(_call_diffrhythm),
-            timeout=88.0
-        )
-
-        if gen_path and os.path.exists(gen_path):
-            shutil.copyfile(gen_path, str(master_song_path))
-            shutil.copyfile(gen_path, str(studio_vocal_path))
-            duration = get_audio_duration(master_song_path) or 159.0
-            print(f"[{time.strftime('%X')}] ✓ DiffRhythm2 successfully generated full singing song ({duration:.1f}s)!")
-            
-            line_duration = duration / max(1, len(cleaned_lines))
-            timed_lines = [
-                {
-                    "text": line,
-                    "start_time": round(i * line_duration, 1),
-                    "end_time": round((i + 1) * line_duration, 1)
+            if gen_path and os.path.exists(gen_path):
+                shutil.copyfile(gen_path, str(master_song_path))
+                shutil.copyfile(gen_path, str(studio_vocal_path))
+                duration = get_audio_duration(master_song_path) or 159.0
+                print(f"[{time.strftime('%X')}] ✓ DiffRhythm2 successfully generated full singing song ({duration:.1f}s)!")
+                
+                line_duration = duration / max(1, len(cleaned_lines))
+                timed_lines = [
+                    {
+                        "text": line,
+                        "start_time": round(i * line_duration, 1),
+                        "end_time": round((i + 1) * line_duration, 1)
+                    }
+                    for i, line in enumerate(cleaned_lines)
+                ]
+                return {
+                    "status": "success",
+                    "engine": "DiffRhythm2 Neural Music Foundation Engine (Suno-Grade Architecture)",
+                    "genre": req.genre_id,
+                    "musical_scale": req.musical_scale,
+                    "master_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
+                    "vocal_url": f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}",
+                    "music_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
+                    "duration": duration,
+                    "lines": timed_lines,
+                    "message": "Full-Length Neural Song Synthesized with Real Singing Melody!"
                 }
-                for i, line in enumerate(cleaned_lines)
-            ]
-            return {
-                "status": "success",
-                "engine": "DiffRhythm2 Neural Music Foundation Engine (Suno-Grade Architecture)",
-                "genre": req.genre_id,
-                "musical_scale": req.musical_scale,
-                "master_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
-                "vocal_url": f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}",
-                "music_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
-                "duration": duration,
-                "lines": timed_lines,
-                "message": "Full-Length Neural Bollywood Song Synthesized with Real Singing Melody!"
-            }
-    except Exception as e:
-        print(f"[{time.strftime('%X')}] DiffRhythm2 note ({e}). Serving pre-mastered neural singing track...")
-        neural_fallback = PUBLIC_AUDIO_DIR / "test_diffrhythm_bollywood.mp3"
-        if not neural_fallback.exists():
-            neural_fallback = PUBLIC_AUDIO_DIR / "diffrhythm2_generated_song.mp3"
-        if neural_fallback.exists():
-            shutil.copyfile(str(neural_fallback), str(master_song_path))
-            shutil.copyfile(str(neural_fallback), str(studio_vocal_path))
-            duration = get_audio_duration(master_song_path) or 159.0
-            line_duration = duration / max(1, len(cleaned_lines))
-            timed_lines = [
-                {
-                    "text": line,
-                    "start_time": round(i * line_duration, 1),
-                    "end_time": round((i + 1) * line_duration, 1)
-                }
-                for i, line in enumerate(cleaned_lines)
-            ]
-            return {
-                "status": "success",
-                "engine": "DiffRhythm2 Neural Music Foundation Engine (Suno-Grade Architecture)",
-                "genre": req.genre_id,
-                "musical_scale": req.musical_scale,
-                "master_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
-                "vocal_url": f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}",
-                "music_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
-                "duration": duration,
-                "lines": timed_lines,
-                "message": "Full-Length Neural Bollywood Song Synthesized with Real Singing Melody!"
-            }
+        except Exception as e:
+            print(f"[{time.strftime('%X')}] DiffRhythm2 note ({e}). Continuing with Dynamic Studio Synthesis Engine...")
 
     # --- SECONDARY ENGINE: Ultra-Fast Melodic Vocal & Acoustic Studio Pipeline (~3 seconds) ---
     # High-Speed Parallel Vocal Synthesis (Parallel edge_tts coroutines: ~1.5s total)

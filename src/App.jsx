@@ -258,14 +258,13 @@ export default function App() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               prompt: cleanPrompt,
-              genre_id: 'bollywood',
               voice_avatar_name: voiceProfile.name
             }),
           });
           if (lyricRes.ok) {
             const lData = await lyricRes.json();
             songLyrics = lData.lyrics;
-            genreToUse = lData.genre || 'bollywood';
+            if (lData.genre) genreToUse = lData.genre;
             scaleToUse = lData.recommended_scale || 'Em';
             if (lData.title) songTitle = lData.title;
           }
@@ -515,7 +514,8 @@ export default function App() {
                 songData={generatedSong}
                 lyrics={lyrics}
                 voiceProfile={voiceProfile}
-                selectedGenre={GENRES[0]}
+                selectedGenre={GENRES.find(g => g.id === generatedSong?.genre) || GENRES[0]}
+                songTitle={generatedSong?.title}
                 onReset={handleResetToNewChat}
               />
             </div>

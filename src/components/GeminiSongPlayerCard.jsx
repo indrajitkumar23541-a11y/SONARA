@@ -20,6 +20,7 @@ export default function GeminiSongPlayerCard({
   lyrics, 
   voiceProfile, 
   selectedGenre,
+  songTitle,
   onReset 
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -155,18 +156,20 @@ export default function GeminiSongPlayerCard({
         {/* Right: Metadata & Actions */}
         <div className="track-info-column">
           <h3 className="track-song-title">
-            {lyrics.split('\n')[0].replace(/[\[\]]/g, '') || 'My AI Bollywood Song'}
+            {songData?.title || songTitle || lyrics.split('\n').find(l => l.trim() && !l.startsWith('['))?.replace(/[\[\]]/g, '') || 'My AI Song'}
           </h3>
           <p className="track-artist-sub">
-            Vocals by <strong className="text-red-primary">{voiceProfile?.name || 'Aarav'}</strong> • Produced with Indian Acoustic Orchestration & -14 LUFS Limiter
+            Vocals by <strong className="text-red-primary">{songData?.voice_name || voiceProfile?.name || 'Aarav'}</strong> • Produced with {selectedGenre?.name || (songData?.genre === 'pop' ? 'Pop Studio' : 'Acoustic')} Orchestration & -14 LUFS Limiter
           </p>
 
           {/* Quick Specs */}
           <div className="track-specs-row">
-            <span className="spec-tag">Acoustic Guitar</span>
-            <span className="spec-tag">Bansuri Flute</span>
-            <span className="spec-tag">Tabla Taal</span>
-            <span className="spec-tag highlight-red">Broadcast Polish</span>
+            {(selectedGenre?.tags || (songData?.genre === 'pop' 
+                ? ['Acoustic Guitar', 'Pop Beats', 'Vocal Harmonies', 'Broadcast Polish']
+                : ['Acoustic Guitar', 'Bansuri Flute', 'Tabla Taal', 'Broadcast Polish']
+             )).map((tag, idx) => (
+              <span key={idx} className={`spec-tag ${tag.includes('Polish') ? 'highlight-red' : ''}`}>{tag}</span>
+            ))}
           </div>
         </div>
       </div>
