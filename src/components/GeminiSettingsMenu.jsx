@@ -485,7 +485,7 @@ export default function GeminiSettingsMenu({
                     <div className="location-telemetry-rows">
                       <div className="loc-telemetry-row">
                         <span className="loc-label">Live Tunnel URL:</span>
-                        <code className="loc-val mono text-red-primary" style={{ wordBreak: 'break-all' }}>https://exports-number-unlock-method.trycloudflare.com</code>
+                        <code className="loc-val mono text-red-primary" style={{ wordBreak: 'break-all' }}>https://educational-unix-convention-footage.trycloudflare.com</code>
                       </div>
                       <div className="loc-telemetry-row">
                         <span className="loc-label">Cloud GPU:</span>

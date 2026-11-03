@@ -49,7 +49,7 @@ else:
         FFMPEG_EXE = shutil.which("ffmpeg") or "ffmpeg"
 
 
-DEFAULT_COLAB_URL = os.environ.get("SONARA_COLAB_URL", "https://exports-number-unlock-method.trycloudflare.com")
+DEFAULT_COLAB_URL = os.environ.get("SONARA_COLAB_URL", "https://educational-unix-convention-footage.trycloudflare.com")
 
 
 class SongGenerationRequest(BaseModel):
@@ -970,17 +970,13 @@ async def generate_song(req: SongGenerationRequest):
                     raise ConnectionError(f"Colab returned {p_resp.status_code}")
 
             print(f"[{time.strftime('%X')}] ⚡ Offloading song generation to Google Colab Free GPU ({colab_clean})...")
-            async with httpx.AsyncClient(timeout=45.0) as client:
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                is_5min_colab = ("5min" in (req.genre_id or "") or "5_min" in (req.genre_id or "") or len(cleaned_lines) > 20 or any(k in (req.lyrics or "").lower() for k in ["5 min", "5 minute", "paanch minute"]))
                 colab_payload = {
                     "lyrics": req.lyrics,
                     "genre_id": req.genre_id or "bollywood",
                     "musical_scale": req.musical_scale or "Em",
-                    "voice_gender": req.voice_gender or "male",
-                    "vocal_tuning": req.vocal_tuning or 50,
-                    "vocal_reverb": req.vocal_reverb or 40,
-                    "enable_harmonies": getattr(req, "enable_harmonies", True),
-                    "enable_sidechain": getattr(req, "enable_sidechain", True),
-                    "enable_mastering": getattr(req, "enable_mastering", True)
+                    "audio_length": 285 if is_5min_colab else 95
                 }
                 c_resp = await client.post(f"{colab_clean}/api/generate-song", json=colab_payload)
                 if c_resp.status_code == 200:
@@ -990,16 +986,18 @@ async def generate_song(req: SongGenerationRequest):
                         master_path = PUBLIC_AUDIO_DIR / f"colab_master_{timestamp}.mp3"
                         with open(master_path, "wb") as f:
                             f.write(base64.b64decode(b64_str))
-                        duration = get_audio_duration(master_path) or c_data.get("duration", 45.0)
+                        duration = get_audio_duration(master_path) or c_data.get("duration", 95.0)
                         line_dur = duration / max(1, len(cleaned_lines))
                         print(f"[{time.strftime('%X')}] ✓ Colab T4 GPU Master successfully generated ({duration:.1f}s)!")
                         return {
+                            "status": "success",
+                            "engine": "DiffRhythm Pure Neural Singing Foundation Model (Zero TTS)",
                             "master_url": f"http://127.0.0.1:8000/audio/{master_path.name}",
                             "vocal_url": f"http://127.0.0.1:8000/audio/{master_path.name}",
                             "music_url": f"http://127.0.0.1:8000/audio/{master_path.name}",
                             "duration": duration,
-                            "lines": [{"text": l, "start_time": round(i*line_dur, 1), "end_time": round((i+1)*line_dur, 1)} for i, l in enumerate(cleaned_lines)],
-                            "message": "100% Free Full Master Song Synthesized on Google Colab NVIDIA T4 GPU!"
+                            "lines": c_data.get("lines") or [{"text": l, "start_time": round(i*line_dur, 1), "end_time": round((i+1)*line_dur, 1)} for i, l in enumerate(cleaned_lines)],
+                            "message": "Full Master Song Synthesized on Google Colab NVIDIA Tesla T4 GPU with Zero TTS!"
                         }
                 else:
                     print(f"[{time.strftime('%X')}] Colab GPU returned HTTP {c_resp.status_code}. Seamlessly routing to Local Studio Pipeline...")
