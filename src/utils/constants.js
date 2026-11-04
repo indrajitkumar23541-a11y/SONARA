@@ -50,13 +50,13 @@ export const GENRES = [
   },
   {
     id: 'pop',
-    name: 'Bollywood Party & Pop',
+    name: 'Modern Pop & Acoustic Studio',
     vibe: 'Modern Radio Hit (Punchy Beat & Synths)',
     emoji: '🎉',
     bpm: 124,
     defaultScale: 'Cmaj',
     color: '#00f2fe',
-    tags: ['Punchy Kick', 'Bright Harmonies', 'Synth Strings'],
+    tags: ['Acoustic Guitar', 'Modern Beats', 'Vocal Harmonies', 'Radio Polish'],
   },
   {
     id: 'cinematic',

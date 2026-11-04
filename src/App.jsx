@@ -233,6 +233,11 @@ export default function App() {
     try {
       let songLyrics = '';
       let genreToUse = 'bollywood';
+      const isEnglishPrompt = /english|bieber|justin|jisten|bebber|taylor|sheeran|pop|western|hollywood/i.test(cleanPrompt);
+      if (isEnglishPrompt) {
+        genreToUse = 'pop';
+        scaleToUse = 'Cmaj';
+      }
       let scaleToUse = 'Em';
       const firstLyricLine = rawLines.find(l => !/^[-—_\[(]*(female|male|both|duet|ladka|ladki|verse|chorus|intro|outro)/i.test(l)) || rawLines[0] || 'My AI Song';
       let songTitle = firstLyricLine.replace(/[-—_\[\]()]/g, '').trim().slice(0, 36) || 'My AI Song';

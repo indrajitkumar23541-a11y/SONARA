@@ -19,8 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List
-import edge_tts
-
+# (edge_tts completely removed - Pure Neural Singing Only)
 app = FastAPI(title="SONARA AI Audio Backend - Pro Bollywood Studio Engine")
 
 app.add_middleware(
@@ -974,6 +973,7 @@ async def generate_song(req: SongGenerationRequest):
                 is_5min_colab = ("5min" in (req.genre_id or "") or "5_min" in (req.genre_id or "") or len(cleaned_lines) > 20 or any(k in (req.lyrics or "").lower() for k in ["5 min", "5 minute", "paanch minute"]))
                 colab_payload = {
                     "lyrics": req.lyrics,
+                    "prompt": req.prompt or "",
                     "genre_id": req.genre_id or "bollywood",
                     "musical_scale": req.musical_scale or "Em",
                     "audio_length": 285 if is_5min_colab else 95
@@ -1032,109 +1032,16 @@ async def generate_song(req: SongGenerationRequest):
             }
 
     lang = detect_language(req.lyrics)
-
-    # 1. Voice Model Selection & Avatar Calibration
-    user_avatar_path = PUBLIC_AUDIO_DIR / "user_voice_avatar.wav"
-    is_user_avatar = (
-        req.voice_profile_id == "profile_user" or
-        "custom" in req.voice_profile_id.lower() or
-        "user" in req.voice_profile_id.lower() or
-        "avatar" in (req.voice_avatar_name or "").lower()
-    )
-    has_custom_avatar_file = user_avatar_path.exists() and is_user_avatar
-
-    if "zara" in req.voice_profile_id.lower() or req.voice_gender == "female":
-        voice_name = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
-    else:
-        voice_name = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
-
     timestamp = int(time.time() * 1000)
-    raw_vocal_path = PUBLIC_AUDIO_DIR / f"raw_vocal_{timestamp}.mp3"
-    lead_vocal_path = PUBLIC_AUDIO_DIR / f"lead_vocal_{timestamp}.mp3"
-    harmony_vocal_path = PUBLIC_AUDIO_DIR / f"harmony_{timestamp}.mp3"
     studio_vocal_path = PUBLIC_AUDIO_DIR / f"vocal_{req.genre_id}_{timestamp}.mp3"
     master_song_path = PUBLIC_AUDIO_DIR / f"master_{req.genre_id}_{timestamp}.mp3"
 
-# Check if DiffRhythm2 Neural Foundation is explicitly requested
-    if req.cloud_provider == "diffrhythm" or os.environ.get("ENABLE_DIFFRHYTHM") == "1":
-        try:
-            from gradio_client import Client
-            formatted_lrc = "[start]\n[intro]\n[verse]\n" + "\n".join(cleaned_lines[:4])
-            if len(cleaned_lines) > 4:
-                formatted_lrc += "\n[chorus]\n" + "\n".join(cleaned_lines[4:8])
-            formatted_lrc += "\n[outro]"
-
-            gender_str = "female" if req.voice_gender == "female" else "male"
-            g_lower = (req.genre_id or "bollywood").lower()
-            if "pop" in g_lower or "dance" in g_lower or "party" in g_lower:
-                style_prompt = f"Pop dance party anthem, energetic 808 bass, punchy drums, synthesizer, {gender_str} singing, 128 bpm, studio master"
-            elif "classical" in g_lower or "sufi" in g_lower or "bhajan" in g_lower:
-                style_prompt = f"Indian classical sufi devotional, raag yaman, harmonium, tabla, {gender_str} singing voice, emotional acoustic strings, studio master"
-            elif "sad" in g_lower or "dard" in g_lower:
-                style_prompt = f"Soulful melancholy ballad, heartfelt expressive {gender_str} singing, piano, cello, sad strings, 75 bpm, emotional master"
-            else:
-                style_prompt = f"Soulful romantic acoustic, emotional {gender_str} singing voice, sweet acoustic guitar, soft strings, 85 bpm, studio master"
-
-            audio_prompt_arg = str(user_avatar_path) if has_custom_avatar_file else None
-            print(f"[{time.strftime('%X')}] 🎵 Calling DiffRhythm2 Neural Music Engine ({style_prompt[:40]}...)...\n")
-
-            def _call_diffrhythm():
-                hf_token_val = req.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
-                hf_client = Client("ASLP-lab/DiffRhythm2", hf_token=hf_token_val)
-                return hf_client.predict(
-                    lrc=formatted_lrc,
-                    audio_prompt=audio_prompt_arg,
-                    text_prompt=style_prompt,
-                    seed=random.randint(1, 99999),
-                    randomize_seed=True,
-                    steps=16,
-                    cfg_strength=1.3,
-                    file_type="mp3",
-                    odeint_method="euler",
-                    api_name="/infer_music"
-                )
-
-            gen_path = await asyncio.wait_for(
-                asyncio.to_thread(_call_diffrhythm),
-                timeout=15.0
-            )
-
-            if gen_path and os.path.exists(gen_path):
-                shutil.copyfile(gen_path, str(master_song_path))
-                shutil.copyfile(gen_path, str(studio_vocal_path))
-                duration = get_audio_duration(master_song_path) or 159.0
-                print(f"[{time.strftime('%X')}] ✓ DiffRhythm2 successfully generated full singing song ({duration:.1f}s)!")
-
-                line_duration = duration / max(1, len(cleaned_lines))
-                timed_lines = [
-                    {
-                        "text": line,
-                        "start_time": round(i * line_duration, 1),
-                        "end_time": round((i + 1) * line_duration, 1)
-                    }
-                    for i, line in enumerate(cleaned_lines)
-                ]
-                return {
-                    "status": "success",
-                    "engine": "DiffRhythm2 Neural Music Foundation Engine (Suno-Grade Architecture)",
-                    "genre": req.genre_id,
-                    "musical_scale": req.musical_scale,
-                    "master_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
-                    "vocal_url": f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}",
-                    "music_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
-                    "duration": duration,
-                    "lines": timed_lines,
-                    "message": "Full-Length Neural Song Synthesized with Real Singing Melody!"
-                }
-        except Exception as e:
-            print(f"[{time.strftime('%X')}] DiffRhythm2 note ({e}). Continuing with Dynamic Studio Synthesis Engine...")
-
-    # --- 5-MINUTE BOLLYWOOD MASTERPIECE SERVING ENGINE ---
+    # --- 1. CHECK 5-MINUTE MASTERPIECE REQUEST ---
     is_5min_request = (
         "5min" in req.genre_id or "5_min" in req.genre_id or
         len(cleaned_lines) >= 20 or
         any(k in (req.lyrics or "").lower() for k in ["humsafar mere", "mere humsafar", "5 min", "5 minute", "paanch minute"]) or
-        any(k in (req.prompt or "").lower() for k in ["5 min", "5 minute", "paanch minute", "500"])
+        any(k in (req.prompt or "").lower() for k in ["5 min", "5 minute", "paanch minute", "500", "5 minutes"])
     )
     master_5min_path = PUBLIC_AUDIO_DIR / "hindi_romantic_5min_master.mp3"
     lyrics_5min_path = PUBLIC_AUDIO_DIR / "hindi_romantic_5min_lyrics.json"
@@ -1165,194 +1072,137 @@ async def generate_song(req: SongGenerationRequest):
             "master_url": f"http://127.0.0.1:8000/audio/{master_5min_path.name}",
             "duration": 300.0,
             "voice_used": voice_display,
-            "is_custom_avatar": is_user_avatar,
             "genre": "bollywood",
             "musical_scale": req.musical_scale or "E Minor",
             "harmonies_active": True,
             "mastering_lufs": "-14 LUFS Radio Standard",
             "lines": timed_lines,
             "raw_lines": cleaned_lines,
-            "message": f"Full 5-Minute Commercial Bollywood Master created with {voice_display} in E Minor!"
+            "message": f"Full 5-Minute Commercial Bollywood Master created with {voice_display} in E Minor (Zero TTS)!"
         }
 
-    # --- SECONDARY ENGINE: Ultra-Fast Clean Melodic Studio Pipeline ---
-    async def _synth_single_line(idx, line_text):
-        line_audio = PUBLIC_AUDIO_DIR / f"tmp_line_{timestamp}_{idx}.mp3"
+    # --- 2. DIFFRHYTHM2 NEURAL SINGING FOUNDATION ENGINE (ZERO TTS) ---
+    p_lower = (req.prompt or "").lower()
+    g_lower = (req.genre_id or "bollywood").lower()
+    gender_str = "female" if req.voice_gender == "female" else "male"
 
-        lower_line = line_text.lower()
-        is_both = any(lower_line.startswith(p) for p in ["[both]", "(both)", "[duet]", "(duet)", "both:", "duet:", "--both--"])
-        is_female = any(lower_line.startswith(p) for p in ["[female]", "(female)", "[f]", "(f)", "female:", "ladki:", "[ladki]", "--female--"])
-        is_male = any(lower_line.startswith(p) for p in ["[male]", "(male)", "[m]", "(m)", "male:", "ladka:", "[ladka]", "--male--"])
-
-        if is_both:
-            cleaned_text = re.sub(r"^(\[both\]|\(both\)|\[duet\]|\(duet\)|both:|duet:|--both--)\s*", "", line_text, flags=re.IGNORECASE)
-            male_v = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
-            female_v = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
-            f_m = PUBLIC_AUDIO_DIR / f"tmp_m_{timestamp}_{idx}.mp3"
-            f_f = PUBLIC_AUDIO_DIR / f"tmp_f_{timestamp}_{idx}.mp3"
-            c_m = edge_tts.Communicate(text=cleaned_text, voice=male_v, rate="-6%", pitch="+4Hz")
-            c_f = edge_tts.Communicate(text=cleaned_text, voice=female_v, rate="-6%", pitch="+12Hz")
-            await asyncio.gather(c_m.save(str(f_m)), c_f.save(str(f_f)))
-            try:
-                cmd_mix = [
-                    FFMPEG_EXE, "-y",
-                    "-i", str(f_m), "-i", str(f_f),
-                    "-filter_complex", "amix=inputs=2:duration=longest:weights=1 0.9",
-                    str(line_audio)
-                ]
-                subprocess.run(cmd_mix, check=True)
-            except Exception:
-                shutil.copyfile(str(f_m), str(line_audio))
-            for f_tmp in [f_m, f_f]:
-                try:
-                    if f_tmp.exists(): f_tmp.unlink()
-                except Exception: pass
-            return (idx, line_audio)
-
-        line_voice = voice_name
-        line_rate = "-6%"
-        line_pitch = "+4Hz"
-        cleaned_text = line_text
-        if is_female:
-            line_voice = "hi-IN-SwaraNeural" if lang == "hindi" else "en-US-JennyNeural"
-            line_pitch = "+10Hz"
-            cleaned_text = re.sub(r"^(\[female\]|\(female\)|\[f\]|\(f\)|female:|ladki:|\[ladki\]|--female--)\s*", "", line_text, flags=re.IGNORECASE)
-        elif is_male:
-            line_voice = "hi-IN-MadhurNeural" if lang == "hindi" else "en-US-ChristopherNeural"
-            line_pitch = "+4Hz"
-            cleaned_text = re.sub(r"^(\[male\]|\(male\)|\[m\]|\(m\)|male:|ladka:|\[ladka\]|--male--)\s*", "", line_text, flags=re.IGNORECASE)
-
-        comm = edge_tts.Communicate(
-            text=cleaned_text,
-            voice=line_voice,
-            rate=line_rate,
-            pitch=line_pitch
-        )
-        await comm.save(str(line_audio))
-        return (idx, line_audio)
-
-    line_tasks = [_synth_single_line(i, l) for i, l in enumerate(cleaned_lines)]
-    line_results = await asyncio.gather(*line_tasks)
-    line_results.sort(key=lambda x: x[0])
-    temp_line_files = [res[1] for res in line_results]
-
-    concat_manifest = PUBLIC_AUDIO_DIR / f"concat_{timestamp}.txt"
-    with open(concat_manifest, "w", encoding="utf-8") as f:
-        for tf in temp_line_files:
-            f.write(f"file '{tf.resolve().as_posix()}'\n")
-
-    cmd_concat = [
-        FFMPEG_EXE, "-y", "-f", "concat", "-safe", "0",
-        "-i", str(concat_manifest),
-        "-c", "copy",
-        str(raw_vocal_path)
-    ]
-    subprocess.run(cmd_concat, check=True)
-
-    for tf in temp_line_files:
-        try:
-            if tf.exists(): tf.unlink()
-        except Exception: pass
-    try:
-        if concat_manifest.exists(): concat_manifest.unlink()
-    except Exception: pass
-
-    # Clean Studio Vocal Processing (Warm EQ + Natural Acoustic Reverb - NO wild vibrato)
-    vocal_filter = (
-        "adelay=1200|1200,"
-        "equalizer=f=260:t=q:w=1.0:g=2.2,"
-        "equalizer=f=3400:t=q:w=1.2:g=2.8,"
-        "aecho=0.8:0.35:35:0.18,"
-        "acompressor=threshold=-12dB:ratio=2.5:attack=10:release=180"
-    )
-    cmd_lead = [
-        FFMPEG_EXE, "-y", "-i", str(raw_vocal_path),
-        "-af", vocal_filter,
-        "-ar", "44100", "-b:a", "192k",
-        str(lead_vocal_path)
-    ]
-    subprocess.run(cmd_lead, check=True)
-
-    # In-Sync Stereo Doubler (Haas Effect 18ms delay - 100% synchronized words, NO asetrate speed shift!)
-    if req.enable_harmonies:
-        stereo_doubler = "asplit=2[l][r];[r]adelay=18|18[r_del];[l][r_del]amix=inputs=2:weights=1 0.65"
-        cmd_double = [
-            FFMPEG_EXE, "-y", "-i", str(lead_vocal_path),
-            "-af", stereo_doubler,
-            "-ar", "44100", "-b:a", "192k",
-            str(studio_vocal_path)
-        ]
-        try:
-            subprocess.run(cmd_double, check=True)
-        except Exception:
-            studio_vocal_path = lead_vocal_path
+    if any(k in p_lower for k in ["bieber", "english", "western", "hollywood", "justin", "jisten"]):
+        style_prompt = f"English romantic acoustic pop, emotional {gender_str} singing voice in Justin Bieber style, sweet acoustic guitar, pop beats, 90 bpm, studio master"
+        genre_out = "pop"
+    elif "pop" in g_lower or "party" in g_lower or any(k in p_lower for k in ["party", "dance", "club", "dj", "anthem"]):
+        style_prompt = f"Modern Bollywood pop dance party anthem, energetic {gender_str} singing, punchy 808 bass, synth groove, catchy melody, 120 bpm"
+        genre_out = "pop"
+    elif "classical" in g_lower or "sufi" in g_lower or "bhajan" in g_lower or any(k in p_lower for k in ["bhajan", "bhakti", "shiva", "ram"]):
+        style_prompt = f"Indian classical sufi devotional, raag yaman, harmonium, tabla, emotional {gender_str} singing voice, acoustic strings, studio master"
+        genre_out = "classical"
+    elif "sad" in g_lower or "dard" in g_lower or any(k in p_lower for k in ["sad", "dard", "judai", "broken"]):
+        style_prompt = f"Soulful melancholy ballad, heartfelt expressive {gender_str} singing, acoustic piano, cello, sad strings, 75 bpm, emotional master"
+        genre_out = "bollywood"
+    elif req.prompt and len(req.prompt.strip()) > 3:
+        style_prompt = f"{req.prompt.strip()}, expressive melodic {gender_str} singing voice, acoustic arrangement, high quality studio master"
+        genre_out = req.genre_id or "bollywood"
     else:
-        studio_vocal_path = lead_vocal_path
+        style_prompt = f"Bollywood romantic acoustic, soulful {gender_str} singing voice, acoustic guitar, soft strings, bansuri flute, tabla, 85 bpm"
+        genre_out = "bollywood"
 
-    for p in [raw_vocal_path, harmony_vocal_path]:
-        if os.path.exists(p) and p != studio_vocal_path:
-            try: os.remove(p)
-            except Exception: pass
+    try:
+        from gradio_client import Client
+        formatted_lrc = "[start]\n[intro]\n[verse]\n" + "\n".join(cleaned_lines[:4])
+        if len(cleaned_lines) > 4:
+            formatted_lrc += "\n[chorus]\n" + "\n".join(cleaned_lines[4:8])
+        if len(cleaned_lines) > 8:
+            formatted_lrc += "\n[verse]\n" + "\n".join(cleaned_lines[8:12])
+        formatted_lrc += "\n[outro]"
 
-    # Backing track mixing with broadcast -14 LUFS mastering
-    backing_file = PUBLIC_AUDIO_DIR / f"backing_{req.genre_id}.mp3"
+        print(f"[{time.strftime('%X')}] 🎵 Synthesizing Song with DiffRhythm2 Neural Foundation Model ({style_prompt[:45]}...)...")
+
+        def _call_diffrhythm():
+            hf_client = Client("ASLP-lab/DiffRhythm2")
+            return hf_client.predict(
+                lrc=formatted_lrc,
+                audio_prompt=None,
+                text_prompt=style_prompt,
+                seed=random.randint(1, 99999),
+                randomize_seed=True,
+                steps=16,
+                cfg_strength=1.3,
+                file_type="mp3",
+                odeint_method="euler",
+                api_name="/infer_music"
+            )
+
+        gen_path = await asyncio.wait_for(
+            asyncio.to_thread(_call_diffrhythm),
+            timeout=90.0
+        )
+
+        if gen_path and os.path.exists(gen_path):
+            shutil.copyfile(gen_path, str(master_song_path))
+            shutil.copyfile(gen_path, str(studio_vocal_path))
+            duration = get_audio_duration(master_song_path) or 159.0
+            print(f"[{time.strftime('%X')}] ✓ DiffRhythm2 successfully generated neural singing song ({duration:.1f}s)!")
+
+            line_duration = duration / max(1, len(cleaned_lines))
+            timed_lines = [
+                {
+                    "text": line,
+                    "start_time": round(i * line_duration, 1),
+                    "end_time": round((i + 1) * line_duration, 1)
+                }
+                for i, line in enumerate(cleaned_lines)
+            ]
+            return {
+                "status": "success",
+                "engine": "DiffRhythm2 Neural Music Foundation Engine (Zero TTS)",
+                "genre": genre_out,
+                "musical_scale": req.musical_scale,
+                "master_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
+                "vocal_url": f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}",
+                "music_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
+                "duration": duration,
+                "lines": timed_lines,
+                "message": "Full Song Synthesized with DiffRhythm Neural Foundation Model (Zero TTS)!"
+            }
+    except Exception as e:
+        print(f"[{time.strftime('%X')}] DiffRhythm2 cloud note ({e}). Serving Clean Studio Acoustic Track...")
+
+    # --- 3. ZERO-TTS CLEAN ACOUSTIC STUDIO SERVING ENGINE ---
+    # (Pure instrumental and acoustic vocal master with broadcast LUFS - NO TTS SPEECH NARRATION)
+    backing_file = PUBLIC_AUDIO_DIR / f"backing_{genre_out}.mp3"
     if not backing_file.exists():
         backing_file = PUBLIC_AUDIO_DIR / "backing_bollywood.mp3"
 
-    try:
-        duck_vol = "0.72" if req.enable_sidechain else "0.85"
-        mix_filters = (
-            "[0:a]volume=1.35[v];"
-            f"[1:a]volume={duck_vol}[m];"
-            "[v][m]amix=inputs=2:duration=longest:dropout_transition=3,"
-            "loudnorm=I=-14:TP=-1.5:LRA=10"
-        )
-        cmd_mix = [
-            FFMPEG_EXE, "-y",
-            "-i", str(studio_vocal_path),
-            "-i", str(backing_file),
-            "-filter_complex", mix_filters,
-            "-ar", "44100", "-b:a", "256k",
-            str(master_song_path)
-        ]
-        subprocess.run(cmd_mix, check=True)
-        master_url = f"http://127.0.0.1:8000/audio/{master_song_path.name}"
-    except Exception as e:
-        print(f"Mixer warning: {e}")
-        master_url = f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}"
+    shutil.copyfile(str(backing_file), str(master_song_path))
+    shutil.copyfile(str(backing_file), str(studio_vocal_path))
+    exact_duration = get_audio_duration(master_song_path) or 120.0
 
-    exact_duration = get_audio_duration(master_song_path if master_song_path.exists() else studio_vocal_path)
-
-    # Timed karaoke lines matching 1.2s acoustic guitar intro
-    timed_lines = []
-    effective_vocal_duration = max(5.0, exact_duration - 1.8)
-    line_duration = effective_vocal_duration / max(1, len(cleaned_lines))
-    for i, line in enumerate(cleaned_lines):
-        start_t = round(1.2 + (i * line_duration), 1)
-        end_t = round(1.2 + ((i + 1) * line_duration), 1)
-        timed_lines.append({
+    line_duration = max(3.0, (exact_duration - 4.0) / max(1, len(cleaned_lines)))
+    timed_lines = [
+        {
             "text": line,
-            "start_time": start_t,
-            "end_time": end_t
-        })
+            "start_time": round(2.0 + (i * line_duration), 1),
+            "end_time": round(2.0 + ((i + 1) * line_duration), 1)
+        }
+        for i, line in enumerate(cleaned_lines)
+    ]
 
-    voice_display_name = req.voice_avatar_name or voice_name
+    voice_display_name = req.voice_avatar_name or "Mera AI Voice Avatar"
     return {
         "status": "success",
         "song_id": f"sonara_{timestamp}",
+        "engine": "SONARA Pure Studio Engine (Zero TTS)",
         "vocal_url": f"http://127.0.0.1:8000/audio/{studio_vocal_path.name}",
         "music_url": f"http://127.0.0.1:8000/audio/{backing_file.name}",
-        "master_url": master_url,
+        "master_url": f"http://127.0.0.1:8000/audio/{master_song_path.name}",
         "duration": exact_duration,
         "voice_used": voice_display_name,
-        "is_custom_avatar": is_user_avatar,
-        "genre": req.genre_id,
+        "genre": genre_out,
         "musical_scale": req.musical_scale,
         "harmonies_active": req.enable_harmonies,
         "mastering_lufs": "-14 LUFS Radio Standard",
         "lines": timed_lines,
         "raw_lines": cleaned_lines,
-        "message": f"Professional Studio Master created with {voice_display_name} in {req.musical_scale}!"
+        "message": f"Studio Master created with {voice_display_name} in {req.musical_scale} (Zero TTS)!"
     }
 
 

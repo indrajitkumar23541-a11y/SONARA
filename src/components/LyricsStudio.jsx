@@ -91,7 +91,10 @@ export default function LyricsStudio({
 
   const generateFallbackLyrics = (promptText) => {
     const textLower = promptText.toLowerCase();
-    if (textLower.includes('barish') || textLower.includes('rain')) {
+    const isEnglish = /english|bieber|justin|jisten|bebber|taylor|sheeran|pop|western|hollywood/i.test(textLower);
+    if (isEnglish) {
+      setLyrics(`[Verse 1]\nWalking down the avenue under neon lights\nThinking 'bout the way you held me through the coldest nights\nEvery little heartbeat whispers out your name\nNothing feels the same without you in this crazy game\n\n[Chorus]\nBaby won't you stay right by my side tonight\nEverything is golden when you hold me tight\nNever let you go you're the melody in my soul\nForever with you darling making my heart whole\n\n[Verse 2]\nCaught up in the rhythm of your sweet guitar\nNo matter where you wander no matter how far\nYou're the shining star that guides me through the dark\nLighting up the world with just a single spark\n\n[Outro]\nYeah baby stay with me until the morning sun\nWith you my girl my life has just begun`);
+    } else if (textLower.includes('barish') || textLower.includes('rain')) {
       const p = LYRICS_PRESETS.find(x => x.id === 'bolly_romantic');
       if (p) setLyrics(p.lyrics);
     } else if (textLower.includes('party') || textLower.includes('dance')) {
@@ -101,7 +104,7 @@ export default function LyricsStudio({
       const p = LYRICS_PRESETS.find(x => x.id === 'birthday_special');
       if (p) setLyrics(p.lyrics);
     } else {
-      setLyrics(`[Verse 1]\nTere khayalon me kho gaya hai mera ye jahan\n${promptText.slice(0, 35)} jaise chhoo gayi meri jaan\nDheere se hawa ne kaha tu paas hai\nTere bina ye dil mera kitna udaas hai\n\n[Chorus]\nTu hi meri dhoon tu hi fasaana\nDil ne seekha tujhse muskurana\nSaansein judi hain tere naam se\nAb na juda ho ye aashiyana\n\n[Outro]\nTu hai toh sab sahi hai meri jaan`);
+      setLyrics(`[Verse 1]\nTere khayalon me kho gaya hai mera ye jahan\nPehli nazar me hi ban gayi tu meri dastaan\nDheere se chhua jo hawa ne laga tu paas hai\nTere bina ye dil mera kitna udaas hai\n\n[Chorus]\nTu hi meri subah hai tu hi meri shaam\nHar ek dhadkan likh rahi bas tera hi naam\nSaansein judi hain meri tere hi aashiyane se\nPyaar ho gaya mujhe tere hi muskurane se\n\n[Outro]\nTu hai toh hai jannat tu hai toh sab sahi\nMeri har khushi bas tujhme hi basi`);
     }
   };
 
